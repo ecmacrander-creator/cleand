@@ -153,6 +153,15 @@ textarea{resize:vertical;min-height:74px}
 /* Plan */
 .planhero{margin-top:16px;border-radius:22px;padding:20px;color:#fff;background:linear-gradient(140deg,var(--hero1),var(--hero2) 70%);box-shadow:var(--shadow)}
 .eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:#AEE6E3}
+.jobacts{display:grid;grid-template-columns:1fr;gap:8px;margin-top:14px}
+.jobacts .btn.big{min-height:52px}
+.jobacts .btn.primary:disabled{opacity:1;background:var(--surface-2);border-color:var(--surface-2);color:var(--ink-3)}
+.donebanner{margin-top:14px;background:var(--good-soft);color:var(--good);border-radius:var(--r);padding:14px 16px;font-size:15px}
+.donebanner b{display:block;font-family:var(--display);font-size:19px;margin-bottom:2px}
+.bonus{font-size:11px;letter-spacing:.04em;background:#F2C14E;color:#3D2E05;border-radius:999px;padding:1px 8px}
+.pill{display:inline-block;margin-top:8px;font-size:12px;font-weight:700;border-radius:999px;padding:2px 10px}
+.pill.ok{background:var(--good-soft);color:var(--good)}
+.pill.open{background:var(--warm);color:var(--warm-ink)}
 .restart{flex:none;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.14);color:#fff;border-radius:999px;padding:7px 13px;font-weight:700;font-size:13.5px;min-height:36px}
 .planhero h1{font-size:clamp(26px,7vw,34px);font-weight:800;line-height:1.06;letter-spacing:-.03em;margin-top:6px}
 .planhero p{margin:8px 0 0;color:#E4F7F6}
@@ -445,7 +454,7 @@ function buildPrompt(collage){
 
 Attached: ${n} photo${n>1?"s":""} of different areas of the home, numbered Photo 1 to Photo ${n}${collage?". To fit the upload limit, some photos are tiled together; each tile has its number in a dark label in its top-left corner":" in the order attached"}.
 
-TIME AVAILABLE: ${S.time} minutes.
+TIME AVAILABLE: ${S.time} minutes.${calibrationText()}
 ENERGY: ${ENERGY_TEXT[S.energy]}
 GOAL: ${goalLine()}
 CONTEXT: ${S.context.trim()||"none given"}
@@ -527,17 +536,102 @@ function makePlan(p){
 }
 
 /* ---------- plan interactions ---------- */
-function toggleTask(id,on){const t=S.plan&&S.plan.tasks.find(x=>x.id===id);if(!t)return;t.done=on;savePlan();renderPlanParts()}
+function workMs(p){p=p||S.plan;if(!p)return 0;return (p.elapsedMs||0)+(p.startedAt?Date.now()-new Date(p.startedAt).getTime():0)}
+function remainingMs(){if(!S.plan||(!S.plan.startedAt&&!S.plan.elapsedMs))return null;return S.plan.minutes*60000-workMs()}
 function startClock(){if(!S.plan)return;S.plan.startedAt=new Date().toISOString();savePlan();render()}
-function remainingMs(){if(!S.plan||!S.plan.startedAt)return null;return S.plan.minutes*60000-(Date.now()-new Date(S.plan.startedAt).getTime())}
+function pauseClock(p){p=p||S.plan;if(!p||!p.startedAt)return;p.elapsedMs=workMs(p);p.startedAt=null}
 function clockHTML(){
-  const r=remainingMs();
-  if(r===null)return `<div class="clock"><div><div class="t">${S.plan.minutes}:00</div><div class="k">Clock isn't running</div></div><button class="btn" data-act="clock">Start the clock</button></div>`;
+  const p=S.plan,r=remainingMs();
+  if(p.status==="done"){const m=Math.round(workMs()/60000);return `<div class="clock"><div><div class="t">Done ✓</div><div class="k">${m?`Finished in ${m} min`:"Job complete"}</div></div></div>`}
+  if(r===null)return `<div class="clock"><div><div class="t">${p.minutes}:00</div><div class="k">Clock isn't running</div></div><button class="btn" data-act="clock">Start the clock</button></div>`;
   if(r<=0)return `<div class="clock over"><div><div class="t">Time's up</div><div class="k">Stop here. A partially reset house is still a reset.</div></div></div>`;
   const s=Math.ceil(r/1000),mm=Math.floor(s/60),ss=String(s%60).padStart(2,"0");
-  return `<div class="clock"><div><div class="t">${mm}:${ss}</div><div class="k">left of ${S.plan.minutes} minutes</div></div></div>`;
+  if(!p.startedAt)return `<div class="clock"><div><div class="t">${mm}:${ss}</div><div class="k">Paused · left of ${p.minutes} minutes</div></div><button class="btn" data-act="clock">Resume clock</button></div>`;
+  return `<div class="clock"><div><div class="t">${mm}:${ss}</div><div class="k">left of ${p.minutes} minutes</div></div></div>`;
 }
 function runTick(){clearInterval(S.tick);S.tick=null;if(S.view==="plan"&&S.plan&&S.plan.startedAt&&remainingMs()>0){S.tick=setInterval(()=>{const el=$("#clock");if(el)el.innerHTML=clockHTML();if(remainingMs()<=0){clearInterval(S.tick);S.tick=null;renderPlanParts()}},1000)}}
+
+/* Learning: time each checked step against its estimate while the clock runs. */
+function getSamples(){try{return JSON.parse(localStorage.getItem("cleand_timing")||"[]")}catch(e){return []}}
+function addSample(x){const a=getSamples();a.push(x);try{localStorage.setItem("cleand_timing",JSON.stringify(a.slice(-80)))}catch(e){}}
+function timeFactor(){
+  const a=getSamples().filter(x=>x.e>0&&x.a>0);if(a.length<3)return null;
+  const r=a.map(x=>x.a/x.e).sort((x,y)=>x-y),m=r[Math.floor(r.length/2)];
+  return {f:Math.min(2.5,Math.max(0.5,m)),n:a.length,ex:a.slice(-6)};
+}
+function calibrationText(){
+  const t=timeFactor();if(!t)return "";
+  const pct=Math.round(t.f*100);
+  return `\nTIME CALIBRATION (learned from ${t.n} timed steps this person actually did): their steps take about ${pct}% of the minutes estimated before. Scale your minute estimates to match. Recent examples: ${t.ex.map(x=>`"${x.t}" estimated ${x.e} min, took ${x.a} min`).join("; ")}.`;
+}
+function toggleTask(id,on){
+  const p=S.plan,t=p&&p.tasks.find(x=>x.id===id);if(!t)return;t.done=on;
+  if(on){const w=workMs();if(w>0){const act=Math.round((w-(p.lastMark||0))/6000)/10;p.lastMark=w;t.actualMin=act;
+    if(act>=0.5&&act<=t.minutes*4+10)addSample({e:t.minutes,a:act,t:t.title.slice(0,40)})}}
+  else t.actualMin=null;
+  savePlan();renderPlanParts();
+}
+async function saveNow(p){if(!S.db||!p)return;clearTimeout(saveT);try{await S.db.doc("resets/"+p.id).set(JSON.parse(JSON.stringify(p)))}catch(e){console.warn(e)}}
+function completeJob(){
+  const p=S.plan;if(!p||!p.tasks.every(t=>t.done))return;
+  pauseClock(p);p.status="done";p.completedAt=new Date().toISOString();
+  savePlan();render();confetti();toast("Job complete. Nice work.");
+  setTimeout(()=>{const a=$("#aftersec");a&&a.scrollIntoView({behavior:"smooth",block:"center"})},1400);
+}
+async function saveForLater(){
+  const p=S.plan;if(!p)return;pauseClock(p);p.status="saved";await saveNow(p);
+  S.plan=null;clearClean();toast("Saved for later. Pick it back up in Wins.");
+}
+async function resumeJob(id){
+  const w=S.wins.find(x=>x.id===id);if(!w)return;
+  if(S.plan&&S.plan.id!==id){pauseClock(S.plan);if(S.plan.status!=="done")S.plan.status="saved";await saveNow(S.plan)}
+  S.areas.forEach(a=>URL.revokeObjectURL(a.url));S.areas=[];
+  S.plan=JSON.parse(JSON.stringify(w));S.plan.status="active";S.view="plan";savePlan();render();window.scrollTo({top:0});
+}
+/* Fill leftover time with more steps from the same photos. */
+async function fillTime(mins){
+  const p=S.plan;if(!p||S.filling)return;
+  if(!getKey()){openSettings();return}
+  S.filling=true;S.fillErr=null;renderPlanParts();
+  try{
+    let blobs=S.areas.map(a=>a.blob);
+    if(!blobs.length&&S.assets)blobs=(await Promise.all((p.before||[]).map(b=>S.assets.get(b.id)))).filter(Boolean);
+    const areas=(p.saw||[]).map(x=>`Photo ${x.photo}: ${x.name}${x.saw?" ("+x.saw+")":""}`).join("\n");
+    const prompt=`You are the planning engine for cleand, a home-reset app. The person finished every step of their plan early and has about ${mins} minutes left. Suggest a few MORE steps that fit that time, based on the attached photos (taken before they started${blobs.length?"":", not available now, so use the area notes"}).
+
+Areas:
+${areas||"unknown"}
+
+Steps they ALREADY DID (assume these are done, don't repeat them):
+${p.tasks.map(t=>"- "+t.area+": "+t.title+" ("+t.action+")").join("\n")}
+
+ENERGY: ${p.energy||"Functional"}. GOAL: ${p.goal||"Biggest impact"}.${calibrationText()}
+
+RULES: 1-3 steps. Minutes must add up to AT MOST ${mins} and should use most of it. Stay in areas they already worked in, next-highest payoff first. Concrete actions, containment over sorting, no perfection cleaning, neutral tone.
+
+Reply with ONLY JSON: {"tasks":[{"photo":1,"area":"Kitchen","title":"Wipe the cleared counter","action":"1-2 sentences","minutes":5,"why":"short reason or empty string"}]}`;
+    const res=await S.sample.json(prompt,blobs.length?{images:blobs.slice(0,10)}:{});
+    if(!res||!Array.isArray(res.tasks)||!res.tasks.length)throw {code:"invalid_json"};
+    let left=mins;const add=[];
+    for(const t of res.tasks){if(left<=0)break;const m=Math.max(1,Math.min(Math.round(+t.minutes||5),left));add.push({photo:+t.photo||null,area:String(t.area||"Area"),title:String(t.title||"Bonus step"),action:String(t.action||""),minutes:m,why:String(t.why||""),id:uid(),done:false,bonus:true});left-=m}
+    p.tasks.push(...add);S.filling=false;savePlan();render();
+    setTimeout(()=>{const el=document.querySelector(`[data-task="${add[0].id}"]`);el&&el.scrollIntoView({behavior:"smooth",block:"center"})},50);
+    toast(`Added ${add.length} step${add.length>1?"s":""}`);
+  }catch(e){console.error(e);S.filling=false;S.fillErr=errCopy(e);renderPlanParts()}
+}
+function confetti(){
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+  const c=document.createElement("canvas"),dpr=Math.min(2,devicePixelRatio||1);
+  c.style.cssText="position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:95";
+  c.width=innerWidth*dpr;c.height=innerHeight*dpr;document.body.appendChild(c);
+  const x=c.getContext("2d");x.scale(dpr,dpr);
+  const cols=["#0B8F94","#5EE0CF","#F2C14E","#FF7A6B","#FFFFFF","#7C9CFF","#14AAA6"];
+  const P=Array.from({length:170},()=>({x:Math.random()*innerWidth,y:-20-Math.random()*innerHeight*.6,w:6+Math.random()*6,h:8+Math.random()*8,vy:2.2+Math.random()*3.2,vx:-1.2+Math.random()*2.4,r:Math.random()*6.28,vr:-.2+Math.random()*.4,c:cols[Math.floor(Math.random()*cols.length)],s:Math.random()*6.28}));
+  const t0=performance.now();
+  (function f(t){const el=t-t0;x.clearRect(0,0,innerWidth,innerHeight);
+    for(const p of P){p.y+=p.vy;p.x+=p.vx+Math.sin((el/400)+p.s)*.8;p.r+=p.vr;x.save();x.globalAlpha=el>3000?Math.max(0,1-(el-3000)/900):1;x.translate(p.x,p.y);x.rotate(p.r);x.fillStyle=p.c;x.fillRect(-p.w/2,-p.h/2,p.w,p.h*Math.abs(Math.cos(el/200+p.s)));x.restore()}
+    if(el<3900)requestAnimationFrame(f);else c.remove()})(t0);
+}
 function planText(){
   const p=S.plan;
   return `cleand · ${p.title}\n${p.startLine?p.startLine+"\n":""}\n${p.tasks.map((t,i)=>`${i+1}. ${t.area}: ${t.title} (${t.minutes} min)\n   ${t.action}`).join("\n\n")}\n\nSTOP: ${p.stopRule}`;
@@ -546,11 +640,15 @@ async function copyPlan(){
   const text=planText();
   try{await navigator.clipboard.writeText(text);toast("Plan copied")}catch(e){S.copyText=text;render();const o=$("#copyout");if(o){o.focus();o.select()}}
 }
-function newReset(){
-  S.plan=null;S.view="setup";S.err=null;S.copyText=null;
+async function newReset(){
+  if(S.plan){pauseClock(S.plan);if(S.plan.status!=="done")S.plan.status="saved";await saveNow(S.plan)}
+  S.plan=null;clearClean();toast("Fresh start. Your last reset is saved in Wins.");
+}
+function clearClean(){
+  S.view="setup";S.err=null;S.copyText=null;S.fillErr=null;S.filling=false;
   S.areas.forEach(a=>URL.revokeObjectURL(a.url));S.areas=[];S.customGoal="";S.context="";
   S.time=30;S.energy=2;S.goal="quick";clearInterval(S.tick);S.tick=null;
-  savePlan();render();window.scrollTo({top:0});toast("Fresh start. Your last reset is saved in Wins.");
+  savePlan();render();window.scrollTo({top:0});
 }
 
 /* ---------- render ---------- */
@@ -621,10 +719,11 @@ function planHTML(){
     <div id="clock">${clockHTML()}</div></section>
   <div class="prog" id="prog"></div>
   <ol class="tasks">${p.tasks.map((t,i)=>`<li><label class="task" data-task="${t.id}"><input type="checkbox" data-check="${t.id}" ${t.done?"checked":""}><span class="box">${i+1}</span>
-    <span class="tb"><span class="tarea">${esc(t.area)}<span class="nowpill" hidden>Now</span></span><span class="ttitle" style="display:block">${esc(t.title)}</span>${t.action?`<span class="tact" style="display:block">${esc(t.action)}</span>`:""}${t.why?`<span class="twhy">${esc(t.why)}</span>`:""}</span>
+    <span class="tb"><span class="tarea">${esc(t.area)}${t.bonus?'<span class="bonus">Bonus</span>':""}<span class="nowpill" hidden>Now</span></span><span class="ttitle" style="display:block">${esc(t.title)}</span>${t.action?`<span class="tact" style="display:block">${esc(t.action)}</span>`:""}${t.why?`<span class="twhy">${esc(t.why)}</span>`:""}</span>
     <span class="tmin">${t.minutes} min</span></label></li>`).join("")}</ol>
-  <div class="stop"><b>Stopping rule</b>${esc(p.stopRule)}</div>
   <div id="extra"></div>
+  <div id="jobacts"></div>
+  <div class="stop"><b>Stopping rule</b>${esc(p.stopRule)}</div>
   ${p.saw&&p.saw.length?`<details class="saw" open><summary>What cleand saw</summary>${p.saw.map(s=>{const a=S.areas[s.photo-1],bf=(p.before||[]).find(x=>x.photo===s.photo),src=a?a.url:bf?blobUrl(bf.id):"";return `<div class="sawrow">${src?`<img src="${src}" alt="">`:""}<div><b>${esc(s.name)}</b>${s.saw?` · ${esc(s.saw)}`:""}${s.caution?`<br><span style="color:var(--danger)">Watch for: ${esc(s.caution)}</span>`:""}</div></div>`}).join("")}</details>`:""}
   ${afterHTML(p)}
   ${S.copyText?`<div class="sec"><p class="hint" style="margin:0 0 8px">Copy didn't work here. Select the text below and copy it.</p><textarea id="copyout" class="copyout" readonly>${esc(S.copyText)}</textarea></div>`:""}
@@ -651,11 +750,13 @@ function winsHTML(){
   return head+S.wins.map(w=>{
     const done=(w.tasks||[]).filter(t=>t.done).length,total=(w.tasks||[]).length,isCur=S.plan&&S.plan.id===w.id,up=S.uploading[w.id]||0;
     const after=isCur?(S.plan.after||[]):(w.after||[]);
+    const st=isCur?S.plan.status:w.status,isDone=st==="done"||(!st&&total&&done===total);
     return `<article class="win"><div class="winmeta"><span>${fmtDay(w.createdAt)}</span><span>${fmtTime(w.minutes||0)}</span><span>${done}/${total} steps</span></div>
+    <span class="pill ${isDone?"ok":"open"}">${isDone?"Complete ✓":isCur?"In progress":"Saved for later"}</span>
     <h3>${esc(w.title||"Reset")}</h3>${w.goal||w.energy?`<div class="hint" style="margin-top:2px">${esc([w.goal,w.energy].filter(Boolean).join(" · "))}</div>`:""}
     <div class="pair"><div class="col"><div class="k">Before</div>${miniGrid(w.before,"Before")}</div><div class="col a"><div class="k">After${up?` · saving ${up}…`:""}</div>${miniGrid(after,"After")}</div></div>
     <div class="winacts">${S.assets?`<label class="pact">${icon.cam}<span>Add after</span><input type="file" accept="image/*" multiple data-after="${w.id}"></label>`:""}
-    ${isCur?`<button class="btn" data-act="nav" data-v="plan">Open plan</button>`:""}
+    ${isCur?`<button class="btn" data-act="nav" data-v="plan">Open plan</button>`:!isDone?`<button class="btn primary" data-act="resume" data-id="${w.id}">Resume</button>`:""}
     <span class="spacer"></span>${S.confirmDel===w.id?`<button class="btn" data-act="delno">Keep</button><button class="btn danger solid" data-act="delwin" data-id="${w.id}">Delete for good</button>`:`<button class="btn ghost danger" data-act="delask" data-id="${w.id}">Remove</button>`}</div></article>`;
   }).join("")+`<div style="height:40px"></div>`;
 }
@@ -666,9 +767,21 @@ function renderPlanParts(){
   const next=p.tasks.find(t=>!t.done);
   document.querySelectorAll("[data-task]").forEach(el=>{const now=next&&el.dataset.task===next.id;el.classList.toggle("now",!!now);el.querySelector(".nowpill").hidden=!now});
   const ex=$("#extra");
-  if(ex){const r=remainingMs();ex.innerHTML=done===total&&total&&p.extra&&(r===null||r>0)?`<div class="extra"><b>Done early. One optional thing:</b>${esc(p.extra)}<br><span style="opacity:.85">Or stop now. That counts too.</span></div>`:""}
+  const all=total&&done===total,r=remainingMs();
+  if(ex){
+    const est=p.tasks.reduce((a,t)=>a+t.minutes,0),leftMin=r!==null?Math.floor(r/60000):p.minutes-est;
+    ex.innerHTML=all&&p.status!=="done"&&leftMin>=3?`<div class="extra"><b>Done early with ${leftMin} min left.</b>
+      ${S.filling?`<div style="display:flex;align-items:center;gap:10px;margin-top:8px"><div class="spinner" style="width:22px;height:22px"></div>Finding the next best steps…</div>`
+      :`Want to keep going? cleand can add a few steps that fit your leftover time.${p.extra?`<br><span style="opacity:.85">Or one small thing: ${esc(p.extra)}</span>`:""}
+      <button class="btn primary" data-act="fill" data-v="${leftMin}" style="margin-top:10px;width:100%">Fill my ${leftMin} minutes</button>`}
+      ${S.fillErr?`<div class="note err">${esc(S.fillErr)}</div>`:""}</div>`:"";
+  }
+  const ja=$("#jobacts");
+  if(ja)ja.innerHTML=p.status==="done"?`<div class="donebanner"><b>Job complete 🎉</b>Snap an after photo below so you can admire it later.</div>`
+    :`<div class="jobacts"><button class="btn primary big" data-act="complete" ${all?"":"disabled"}>${all?"Complete job":`Complete job · ${total-done} step${total-done===1?"":"s"} left`}</button>
+      <button class="btn big" data-act="later">Save for later</button></div>`;
   const ck=$("#clock");if(ck)ck.innerHTML=clockHTML();
-  const af=$("#aftersec");if(af){const r=remainingMs();af.classList.toggle("lit",(total&&done===total)||(r!==null&&r<=0))}
+  const af=$("#aftersec");if(af)af.classList.toggle("lit",p.status==="done"||(r!==null&&r<=0));
 }
 
 /* ---------- events ---------- */
@@ -686,6 +799,10 @@ document.addEventListener("click",e=>{
   else if(a==="forgetkey"){setKey("");closeSettings();toast("Key removed from this phone")}
   else if(a==="stop"){S.ctl&&S.ctl.abort()}
   else if(a==="clock")startClock();
+  else if(a==="complete")completeJob();
+  else if(a==="later")saveForLater();
+  else if(a==="fill")fillTime(+v);
+  else if(a==="resume")resumeJob(b.dataset.id);
   else if(a==="copy")copyPlan();
   else if(a==="new")newReset();
   else if(a==="edit"){S.view="setup";render();window.scrollTo({top:0})}
