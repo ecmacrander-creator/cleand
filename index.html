@@ -162,6 +162,8 @@ textarea{resize:vertical;min-height:74px}
 .pill{display:inline-block;margin-top:8px;font-size:12px;font-weight:700;border-radius:999px;padding:2px 10px}
 .pill.ok{background:var(--good-soft);color:var(--good)}
 .pill.open{background:var(--warm);color:var(--warm-ink)}
+.goalpill{display:inline-flex;align-items:baseline;gap:8px;margin:12px 0 6px;background:rgba(255,255,255,.95);color:#07494D;border-radius:12px;padding:7px 12px;font-weight:700;font-size:15px;line-height:1.3;max-width:100%}
+.goalpill span{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#0B8F94;font-weight:500;flex:none}
 .restart{flex:none;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.14);color:#fff;border-radius:999px;padding:7px 13px;font-weight:700;font-size:13.5px;min-height:36px}
 .planhero h1{font-size:clamp(26px,7vw,34px);font-weight:800;line-height:1.06;letter-spacing:-.03em;margin-top:6px}
 .planhero p{margin:8px 0 0;color:#E4F7F6}
@@ -275,7 +277,7 @@ textarea{resize:vertical;min-height:74px}
 const MAX_PHOTOS=10;
 const TIMES=[10,20,30,60,90];
 const ENERGY=[[1,"Bare minimum","Low effort"],[2,"Functional","Steady"],[3,"I can move","Deeper reset"]];
-const GOALS=[["quick","Quick win"],["declutter","Declutter"],["organize","Organization"],["impact","Biggest impact"],["custom","My own goal"]];
+const GOALS=[["quick","Quick win"],["declutter","Declutter & donate"],["organize","Organization"],["impact","Biggest impact"],["custom","My own goal"]];
 const GOAL_TEXT={
   quick:`QUICK WIN. The person needs momentum and a visible "I did something" moment.
   - Pick the 2-5 smallest steps with the most obvious visual change: the thing you see first when you walk in.
@@ -283,12 +285,13 @@ const GOAL_TEXT={
   - Front-load the fastest, most satisfying step as step 1.
   - Skip anything slow, fiddly or hidden, even if it matters.
   - Example step: "Clear the coffee table: trash in the bag, cups to the sink, everything else in one basket."`,
-  declutter:`DECLUTTER. The goal is FEWER THINGS out: get stuff off floors and surfaces and out of the room.
-  - Steps are about removing: trash and recycling out, dishes to the kitchen, laundry to the hamper, things that belong in other rooms bagged or basketed and carried out.
-  - Include one quick "discard" pass where it's obvious (packaging, junk mail, broken or empty items). No sentimental decisions.
-  - Measure success by clear floor and clear surface area.
-  - Don't spend time arranging or grouping what stays.
-  - Example step: "Floor sweep: walk the room once with a trash bag and a laundry basket. Trash in the bag, clothes in the basket, carry both out."`,
+  declutter:`DECLUTTER & DONATE. The goal is FEWER THINGS in the house: get stuff off floors and surfaces, out of the room, and set aside anything that can be donated.
+  - Start the plan by having them grab two bags or boxes: one for trash, one for DONATE.
+  - Removing steps: trash and recycling out, dishes to the kitchen, laundry to the hamper, things that belong in other rooms carried out.
+  - Donate steps: point to specific things in the photos that look like easy donations (outgrown kids' clothes or shoes, toys nobody plays with, duplicates, décor or items that look unused). Use a quick rule: "if you didn't know you had it or haven't used it this year, it goes in the donate bag." Keep decisions fast and yes/no. Nothing sentimental.
+  - End with a step that closes the donate bag and puts it by the front door or in the car, so it actually leaves the house.
+  - Measure success by clear floor, clear surfaces and a full donate bag. Don't spend time arranging what stays.
+  - Example step: "Kids' shelf donate pass: pull anything outgrown or ignored into the donate bag. Two minutes, no second-guessing."`,
   organize:`ORGANIZATION. The goal is things IN THEIR PLACE and grouped, not just gone.
   - Steps are about returning items to their homes and grouping like with like: shoes together at the door, toys back in their bin, books on the shelf, cords coiled, papers in one stack.
   - Create simple zones where there clearly are none (one spot for bags, one for keys and mail).
@@ -734,7 +737,8 @@ function setupHTML(){
 }
 function planHTML(){
   const p=S.plan;
-  return `<section class="planhero"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div class="eyebrow">${esc(p.goal||"Your plan")} · ${fmtTime(p.minutes)}</div><button class="restart" data-act="new">↺ Start over</button></div>
+  return `<section class="planhero"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div class="eyebrow">Your plan · ${fmtTime(p.minutes)}</div><button class="restart" data-act="new">↺ Start over</button></div>
+    ${p.goal?`<div class="goalpill"><span>Goal</span>${esc(p.goal)}</div>`:""}
     <h1>${esc(p.title)}</h1>${p.startLine||p.strategy?`<p>${esc([p.startLine,p.strategy].filter(Boolean).join(" "))}</p>`:""}
     <div id="clock">${clockHTML()}</div></section>
   <div class="prog" id="prog"></div>
