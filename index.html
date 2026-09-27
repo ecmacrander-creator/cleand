@@ -1,0 +1,835 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>cleand</title>
+<meta name="theme-color" content="#EDF4F3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0B1514" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="cleand">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#EDF4F3; --surface:#FFFFFF; --surface-2:#DFEBE9; --ink:#10231F; --ink-2:#42585A; --ink-3:#687B7B; --line:#CFDEDB;
+  --accent:#087A7F; --accent-hover:#06666A; --accent-ink:#FFFFFF; --accent-soft:#D5F0EE; --mint:#0F9E8F;
+  --hero1:#075D63; --hero2:#0B8F94; --hero3:#14AAA6;
+  --good:#1E7A4C; --good-soft:#DDF1E6; --danger:#B3261E; --danger-soft:#F9E3E1;
+  --warm:#F6ECD6; --warm-ink:#5A4414;
+  --shadow:0 1px 2px rgba(16,35,31,.06),0 6px 20px rgba(16,35,31,.06);
+  --display:"Bricolage Grotesque","Figtree",system-ui,sans-serif;
+  --body:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"DM Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:16px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0B1514; --surface:#12201E; --surface-2:#1B2C29; --ink:#E2EFEC; --ink-2:#A2B7B3; --ink-3:#7C908C; --line:#253633;
+    --accent:#4FD1CB; --accent-hover:#6FDDD8; --accent-ink:#06201F; --accent-soft:#16332F; --mint:#5EE0CF;
+    --hero1:#063C40; --hero2:#07666A; --hero3:#0B7F7F;
+    --good:#5CC592; --good-soft:#15301F; --danger:#F08A80; --danger-soft:#3A1D1B;
+    --warm:#2E2716; --warm-ink:#EBD9AE; --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0B1514; --surface:#12201E; --surface-2:#1B2C29; --ink:#E2EFEC; --ink-2:#A2B7B3; --ink-3:#7C908C; --line:#253633;
+  --accent:#4FD1CB; --accent-hover:#6FDDD8; --accent-ink:#06201F; --accent-soft:#16332F; --mint:#5EE0CF;
+  --hero1:#063C40; --hero2:#07666A; --hero3:#0B7F7F;
+  --good:#5CC592; --good-soft:#15301F; --danger:#F08A80; --danger-soft:#3A1D1B;
+  --warm:#2E2716; --warm-ink:#EBD9AE; --shadow:none;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;padding-bottom:env(safe-area-inset-bottom,0px);background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:-.01em}
+[hidden]{display:none!important}
+.wrap{max-width:720px;margin:0 auto;padding-inline:16px}
+
+/* Header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:10px;padding-block:10px}
+.logo{display:flex;align-items:center;gap:9px;background:none;border:0;padding:0;min-width:0;text-align:left}
+.mark{width:34px;height:34px;border-radius:10px;flex:none;position:relative;overflow:hidden;
+  background-color:var(--accent);
+  background-image:radial-gradient(circle at 24% 72%,rgba(255,255,255,.6) 0 1.6px,transparent 2px),radial-gradient(circle at 76% 80%,rgba(255,255,255,.5) 0 1.3px,transparent 1.7px),radial-gradient(circle at 80% 26%,rgba(255,255,255,.55) 0 1.1px,transparent 1.5px),radial-gradient(circle at 50% 54%,rgba(255,255,255,.35) 0 .9px,transparent 1.3px),linear-gradient(150deg,rgba(255,255,255,.18),rgba(255,255,255,0) 60%)}
+.mark::before{content:"";position:absolute;left:7px;right:7px;top:10px;height:3px;border-radius:3px;background:rgba(255,255,255,.9)}
+.mark::after{content:"";position:absolute;left:6px;top:8.5px;width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.55)}
+.topnav{display:flex;gap:4px}
+.topnav button{border:0;background:none;border-radius:999px;padding:7px 12px;font-weight:700;font-size:14px;color:var(--ink-2);min-height:36px}
+.topnav button:hover{background:var(--surface-2)}
+.topnav button[aria-current="page"]{background:var(--ink);color:var(--bg)}
+@media (max-width:480px){.sub{display:none!important}}
+.word{font-family:var(--display);font-weight:800;font-size:25px;letter-spacing:-.035em;line-height:1}
+.word b{color:var(--mint);font-weight:800}
+.sub{font-size:11.5px;color:var(--ink-3);font-weight:600;line-height:1.1;margin-top:2px;white-space:nowrap}
+.spacer{flex:1}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:999px;border:1px solid var(--line);background:var(--surface);padding:9px 15px;font-weight:600;font-size:14px;white-space:nowrap;line-height:1.2;min-height:40px}
+.btn:hover{border-color:var(--ink-3)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{background:var(--accent-hover)}
+.btn.ghost{background:none;border-color:transparent;color:var(--ink-2)}
+.btn.ghost:hover{background:var(--surface-2)}
+.btn.big{width:100%;min-height:54px;font-size:16.5px;font-weight:700;border-radius:16px}
+.btn:disabled{opacity:.5;cursor:default}
+
+/* Hero */
+.hero{margin-top:16px;border-radius:22px;padding:22px 20px;color:#fff;background:linear-gradient(140deg,var(--hero1),var(--hero2) 58%,var(--hero3));box-shadow:var(--shadow)}
+.hero h1{font-size:clamp(26px,7vw,34px);font-weight:800;line-height:1.05;letter-spacing:-.03em}
+.hero p{margin:8px 0 0;color:#E4F7F6;font-size:15px;max-width:48ch}
+
+/* Section cards */
+.sec{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px 16px;margin-top:12px;box-shadow:var(--shadow)}
+.sec h2{font-size:19px;font-weight:700;display:flex;align-items:baseline;gap:9px}
+.sec h2 .n{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:1px 8px}
+.lbl{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);font-weight:700;margin:16px 0 8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:9px 14px;font-size:14.5px;font-weight:600;color:var(--ink-2);min-height:42px}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.chip.sm{padding:5px 11px;font-size:13px;min-height:32px}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--surface-2);border-radius:14px;padding:4px}
+.seg button{border:0;background:none;border-radius:11px;padding:10px 4px;font-weight:700;font-size:14px;color:var(--ink-2);min-height:46px;line-height:1.2}
+.seg button small{display:block;font-weight:500;font-size:11.5px;color:var(--ink-3);margin-top:2px}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.timeline{display:flex;align-items:baseline;gap:6px;margin-top:10px}
+.timebig{font-family:var(--display);font-size:46px;font-weight:800;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums}
+.timeline span{color:var(--ink-3);font-weight:600}
+input[type=range]{width:100%;accent-color:var(--accent);margin:12px 0 10px;height:28px}
+
+/* Photos */
+.pacts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.pact{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:6px;border:1px solid var(--line);border-radius:14px;padding:14px;background:var(--surface);min-height:92px;cursor:pointer;overflow:hidden}
+.pact.main{background:var(--accent-soft);border-color:transparent}
+.pact input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;font-size:0}
+.pact svg{color:var(--accent)}
+.pact b{font-size:15px}
+.pact small{font-size:12.5px;color:var(--ink-3);line-height:1.3}
+.pcount{display:flex;justify-content:space-between;align-items:center;margin-top:14px;font-size:13.5px;color:var(--ink-2);font-weight:600}
+.pcount .m{font-family:var(--mono);font-weight:500;color:var(--ink-3)}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin-top:10px}
+.th{position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--surface-2)}
+.th img{width:100%;height:100%;object-fit:cover;display:block}
+.th .no{position:absolute;left:6px;bottom:6px;background:rgba(0,0,0,.6);color:#fff;font-family:var(--mono);font-size:11px;border-radius:6px;padding:1px 6px}
+.th .x{position:absolute;top:5px;right:5px;width:28px;height:28px;border-radius:50%;border:0;background:rgba(0,0,0,.62);color:#fff;font-size:15px;line-height:1;display:grid;place-items:center}
+.th.busy{display:grid;place-items:center}
+.emptyp{margin-top:12px;border:1.5px dashed var(--line);border-radius:12px;padding:16px;text-align:center;color:var(--ink-3);font-size:14px}
+
+textarea,.inp{width:100%;border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:11px 12px;font-size:16px;line-height:1.4}
+textarea{resize:vertical;min-height:74px}
+.hint{font-size:13px;color:var(--ink-3);margin:8px 0 0}
+.note{border-radius:12px;padding:11px 13px;font-size:14px;margin-top:12px}
+.note.err{background:var(--danger-soft);color:var(--danger)}
+.note.info{background:var(--surface-2);color:var(--ink-2)}
+.go{margin-top:14px;padding-bottom:12px}
+.go .alt{display:block;margin:8px auto 0;background:none;border:0;color:var(--ink-3);font-size:13.5px;font-weight:600;text-decoration:underline;text-underline-offset:3px;padding:8px}
+
+.marea{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.marea:last-child{border-bottom:0}
+.marea img{width:64px;height:64px;border-radius:10px;object-fit:cover;flex:none}
+.marea .f{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px}
+.marea .inp{padding:7px 10px;font-size:15px}
+.marea select{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:6px 8px;font-size:14px;width:100%}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+/* Working */
+.working{display:flex;flex-direction:column;align-items:center;gap:12px;padding:44px 16px;text-align:center;color:var(--ink-2)}
+.working h2{font-size:22px;color:var(--ink)}
+.spinner{width:40px;height:40px;border-radius:50%;border:3px solid var(--surface-2);border-top-color:var(--accent);animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spinner{animation-duration:3s}}
+.strip{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;max-width:360px}
+.strip img{width:48px;height:48px;border-radius:9px;object-fit:cover;opacity:.9}
+
+/* Plan */
+.planhero{margin-top:16px;border-radius:22px;padding:20px;color:#fff;background:linear-gradient(140deg,var(--hero1),var(--hero2) 70%);box-shadow:var(--shadow)}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:#AEE6E3}
+.planhero h1{font-size:clamp(26px,7vw,34px);font-weight:800;line-height:1.06;letter-spacing:-.03em;margin-top:6px}
+.planhero p{margin:8px 0 0;color:#E4F7F6}
+.clock{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;background:rgba(255,255,255,.12);border-radius:14px;padding:10px 12px}
+.clock .t{font-family:var(--mono);font-size:26px;font-weight:500;font-variant-numeric:tabular-nums;line-height:1}
+.clock .k{font-size:12px;color:#CDEEEC;margin-top:3px}
+.clock .btn{background:#fff;color:#07494D;border-color:#fff}
+.clock.over{background:var(--warm);color:var(--warm-ink)}
+.clock.over .k{color:inherit;opacity:.8}
+
+.prog{margin-top:16px}
+.bar{height:10px;background:var(--surface-2);border-radius:999px;overflow:hidden}
+.bar>div{height:100%;background:linear-gradient(90deg,var(--accent),var(--mint));border-radius:999px;transition:width .25s}
+.progline{display:flex;justify-content:space-between;font-size:13.5px;color:var(--ink-2);font-weight:600;margin-top:6px}
+.progline .m{font-family:var(--mono);font-weight:500;color:var(--ink-3)}
+
+.tasks{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:10px}
+.task{position:relative;display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 14px 14px 12px;cursor:pointer;box-shadow:var(--shadow)}
+.task.now{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),var(--shadow)}
+.task input{position:absolute;opacity:0;pointer-events:none}
+.box{flex:none;width:30px;height:30px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:15px;color:var(--accent);margin-top:1px}
+.task input:checked ~ .box{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.task input:focus-visible ~ .box{outline:2px solid var(--accent);outline-offset:2px}
+.tb{flex:1;min-width:0}
+.tarea{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);font-weight:700;display:flex;gap:8px;align-items:center}
+.nowpill{font-size:11px;letter-spacing:.04em;background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:1px 8px}
+.ttitle{font-family:var(--display);font-size:18px;font-weight:700;line-height:1.25;margin-top:2px}
+.tact{color:var(--ink-2);font-size:15px;margin-top:4px}
+.twhy{display:block;color:var(--ink-3);font-size:13px;margin-top:6px}
+.tmin{flex:none;font-family:var(--mono);font-size:13px;font-weight:500;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:3px 9px;margin-top:2px}
+.task input:checked ~ .tb .ttitle,.task input:checked ~ .tb .tact{color:var(--ink-3);text-decoration:line-through;text-decoration-color:var(--ink-3)}
+.task input:checked ~ .tb .twhy{display:none}
+.task input:checked ~ .tmin{opacity:.5}
+
+.stop{margin-top:14px;background:var(--warm);color:var(--warm-ink);border-radius:var(--r);padding:14px 16px;font-size:15px}
+.stop b{display:block;font-family:var(--display);font-size:17px;margin-bottom:2px}
+.extra{margin-top:10px;background:var(--good-soft);color:var(--good);border-radius:var(--r);padding:14px 16px;font-size:15px}
+.extra b{display:block;font-family:var(--display);font-size:17px;margin-bottom:2px}
+.saw{margin-top:14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:4px 16px}
+.saw summary{cursor:pointer;padding:12px 0;font-weight:700;font-family:var(--display);font-size:16px}
+.sawrow{display:flex;gap:10px;padding:10px 0;border-top:1px solid var(--line);font-size:14px;color:var(--ink-2)}
+.sawrow img{width:52px;height:52px;border-radius:9px;object-fit:cover;flex:none}
+.sawrow b{color:var(--ink)}
+.acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;padding-bottom:40px}
+.acts .btn{flex:1 1 140px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;font-weight:600;z-index:80;box-shadow:0 8px 30px rgba(0,0,0,.2);max-width:calc(100% - 32px)}
+.copyout{width:100%;min-height:220px;font-family:var(--mono);font-size:13px}
+
+/* After photos */
+.after{margin-top:14px}
+.after h2{font-size:19px;font-weight:700}
+.after .pacts{margin-top:12px}
+.after.lit{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),var(--shadow)}
+.th button.open{all:unset;cursor:zoom-in;display:block;width:100%;height:100%}
+
+/* Wins */
+.winshead{margin-top:18px}
+.winshead h1{font-size:clamp(28px,7vw,38px);font-weight:800;letter-spacing:-.03em}
+.winshead p{color:var(--ink-3);margin:4px 0 0}
+.win{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-top:12px;box-shadow:var(--shadow)}
+.winmeta{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:13px;color:var(--ink-3);font-family:var(--mono)}
+.win h3{font-size:19px;font-weight:700;margin-top:4px}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.pair .col .k{font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;color:var(--ink-3);margin-bottom:6px}
+.pair .col.a .k{color:var(--accent)}
+.mini{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px}
+.mini button{all:unset;cursor:zoom-in;aspect-ratio:1;border-radius:9px;overflow:hidden;background:var(--surface-2);display:block}
+.mini img{width:100%;height:100%;object-fit:cover;display:block}
+.mini .none{font-size:13px;color:var(--ink-3);grid-column:1/-1}
+.winacts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;align-items:center}
+.winacts .pact{min-height:40px;flex-direction:row;align-items:center;padding:8px 14px;border-radius:999px;gap:8px;font-weight:600;font-size:14px;flex:0 0 auto}
+.winacts .pact svg{width:18px;height:18px}
+.btn.danger{color:var(--danger)}
+.btn.danger.solid{background:var(--danger);border-color:var(--danger);color:#fff}
+.emptywins{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:26px 20px;margin-top:14px;color:var(--ink-2)}
+.emptywins h2{font-size:22px;color:var(--ink);margin-bottom:6px}
+
+/* Lightbox */
+.lb{position:fixed;inset:0;z-index:90;background:rgba(5,12,11,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:calc(16px + env(safe-area-inset-top,0px)) 12px calc(16px + env(safe-area-inset-bottom,0px));gap:10px}
+.lb img{max-width:100%;max-height:82vh;border-radius:12px;object-fit:contain}
+.lb .cap{color:#DDEEEC;font-size:14px;font-weight:600}
+.lb button{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:12px;width:40px;height:40px;border-radius:50%;border:0;background:rgba(255,255,255,.15);color:#fff;font-size:18px}
+@media (max-width:380px){.sub{display:none}.pacts{grid-template-columns:1fr}.two{grid-template-columns:1fr}}
+/* Settings sheet */
+.backdrop{position:fixed;inset:0;z-index:60;background:rgba(5,12,11,.5);display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--surface);width:100%;max-width:560px;border-radius:22px 22px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom,0px));max-height:92vh;overflow:auto}
+.sheet h2{font-size:22px;font-weight:800}
+.sheet ol{margin:10px 0 0;padding-left:20px;color:var(--ink-2);font-size:15px;display:flex;flex-direction:column;gap:6px}
+.sheet a{color:var(--accent);font-weight:700}
+.iconbtn{width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;color:var(--ink-2);flex:none}
+.keycard{background:var(--accent-soft);border-radius:var(--r);padding:16px;margin-top:12px}
+.keycard h2{font-size:18px;font-weight:700}
+</style>
+</head><body>
+
+<div class="top">
+  <div class="wrap">
+    <button class="logo" data-act="home" aria-label="cleand home"><span class="mark" aria-hidden="true"></span><span><span class="word">clean<b>d</b></span><span class="sub" style="display:block">executive function, outsourced</span></span></button>
+    <span class="spacer"></span>
+    <nav class="topnav" id="topnav" aria-label="Sections"></nav>
+    <button class="iconbtn" data-act="settings" aria-label="Settings"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+  </div>
+</div>
+<main id="main" class="wrap"></main>
+<div id="toast" class="toast" hidden role="status"></div>
+<div id="lb" class="lb" hidden role="dialog" aria-modal="true" aria-label="Photo"></div>
+<div id="sheet" class="backdrop" hidden></div>
+
+<script>
+/* ---------- constants ---------- */
+const MAX_PHOTOS=10;
+const TIMES=[10,20,30,60,90];
+const ENERGY=[[1,"Bare minimum","Low effort"],[2,"Functional","Steady"],[3,"I can move","Deeper reset"]];
+const GOALS=[["quick","Quick win"],["declutter","Declutter"],["organize","Organization"],["impact","Biggest impact"],["custom","My own goal"]];
+const GOAL_TEXT={
+  quick:"QUICK WIN. Favor small tasks, obvious visual improvement, low decision load and fast motivation.",
+  declutter:"DECLUTTER. Favor loose clutter, trash, laundry, clearing floors, removing items from surfaces, and containment (one basket) when sorting would take too long.",
+  organize:"ORGANIZATION. Favor grouping like items, putting obvious items back, creating simple functional zones. Do NOT turn this into drawer organizing, micro-sorting, sentimental decisions or storage systems.",
+  impact:"BIGGEST IMPACT. Choose whatever combination produces the greatest overall improvement in the available time."
+};
+const ENERGY_TEXT={
+  1:"BARE MINIMUM. Fewer tasks (about 2-4), containment over sorting: trash sweep, gather dishes, laundry into one basket. Minimal room switching. Nothing that needs decisions.",
+  2:"FUNCTIONAL. A normal pace. Restore function and get visible wins. Still no perfectionism.",
+  3:"I CAN MOVE. Can include a deeper reset of one area if it pays off, but still avoid perfectionism and elaborate organizing."
+};
+/* ---------- state ---------- */
+const S={
+  sample:null,canImages:false,imgMax:1,imgTypes:"image/jpeg,image/png,image/webp,image/gif",runtimeChecked:false,
+  alt:null,db:null,assets:null,wins:[],winsReady:false,uploading:{},confirmDel:null,
+  view:"setup",time:30,energy:2,goal:"quick",customGoal:"",context:"",
+  areas:[],adding:0,
+  plan:null,busy:false,ctl:null,err:null,copyText:null,tick:null
+};
+
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid=()=>(crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random()));
+function toast(msg){const t=$("#toast");t.textContent=msg;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,2600)}
+const fmtTime=m=>m>=60?(m%60?`${Math.floor(m/60)} hr ${m%60} min`:`${m/60} hour${m>=120?"s":""}`):`${m} min`;
+const icon={
+  cam:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',
+  lib:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>'
+};
+
+/* ---------- persistence ----------
+   resets/{id}      one doc per reset: plan, progress, before + after photo asset ids
+   session/current  {planId} of the reset in progress */
+let saveT=null;
+function savePlan(){
+  if(!S.db)return;
+  clearTimeout(saveT);
+  saveT=setTimeout(()=>{
+    const cur=S.db.doc("session/current");
+    if(!S.plan){cur.delete().catch(()=>{});return}
+    const p=JSON.parse(JSON.stringify(S.plan));
+    S.db.doc("resets/"+p.id).set(p).catch(e=>{console.warn("save failed",e);toast("Couldn't save progress. It's still on screen.")});
+    cur.set({planId:p.id}).catch(()=>{});
+  },250);
+}
+const BLANK="data:image/gif;base64,R0lGODlhAQABAAAAACw=";
+const urlCache={},loading={};let reT=null;
+function blobUrl(id){
+  if(urlCache[id])return urlCache[id];
+  if(!loading[id]&&S.assets){loading[id]=1;S.assets.get(id).then(b=>{if(b){urlCache[id]=URL.createObjectURL(b);clearTimeout(reT);reT=setTimeout(()=>{if(!S.busy&&$("#lb").hidden){const y=scrollY;render();scrollTo(0,y)}},60)}})}
+  return BLANK;
+}
+function uploadErr(e){const c=e&&e.code;return c==="quota_or_state"?"Photo storage is full. Remove an old reset in Wins to make room.":c==="too_large"?"That photo is too large to save.":c==="unsupported_type"?"That photo type can't be saved. Try a JPG or PNG.":"Couldn't save that photo. Try again."}
+async function uploadBlob(blob){
+  const type=/^image\/(jpeg|png|webp|gif)$/.test(blob.type)?undefined:"image/jpeg";
+  const r=await S.assets.upload(blob);urlCache[r.id]=URL.createObjectURL(blob);return r.id;
+}
+// Save the before photos with the plan so Wins can show them later.
+async function saveBefores(plan,areas){
+  if(!S.assets||!areas.length)return;
+  plan.before=plan.before||[];
+  for(let i=0;i<areas.length;i++){
+    if(S.plan!==plan)return;
+    try{const id=await uploadBlob(areas[i].blob);plan.before.push({photo:i+1,name:areas[i].name||`Area ${i+1}`,id});savePlan()}
+    catch(e){console.warn(e);if(i===0)toast(uploadErr(e));if(e&&e.code==="quota_or_state")return}
+  }
+}
+// After photos: works for the current plan or any past reset in Wins.
+async function addAfters(list,input,planId){
+  const files=[...(list||[])];if(input)input.value="";
+  if(!files.length)return;
+  if(!S.assets||!S.db){toast("Saving photos isn't available in this browser.");return}
+  const isCur=S.plan&&S.plan.id===planId;
+  const target=isCur?S.plan:(()=>{const w=S.wins.find(x=>x.id===planId);return w?JSON.parse(JSON.stringify(w)):null})();
+  if(!target)return;
+  target.after=target.after||[];
+  S.uploading[planId]=(S.uploading[planId]||0)+files.length;render();
+  for(const f of files.slice(0,10)){
+    try{
+      const blob=await prepareImage(f);const id=await uploadBlob(blob);
+      target.after.push({id,at:new Date().toISOString()});
+      if(isCur)savePlan();else await S.db.doc("resets/"+planId).set(target);
+    }catch(e){console.warn(e);toast(uploadErr(e))}
+    S.uploading[planId]--;render();
+  }
+  toast("Nice work. Saved to Wins.");
+}
+async function deleteWin(id){
+  const w=S.wins.find(x=>x.id===id);if(!w||!S.db)return;
+  S.confirmDel=null;
+  try{
+    await S.db.doc("resets/"+id).delete();
+    if(S.assets)for(const p of [...(w.before||[]),...(w.after||[])])S.assets.delete(p.id).catch(()=>{});
+    if(S.plan&&S.plan.id===id){S.plan=null;S.db.doc("session/current").delete().catch(()=>{})}
+    toast("Removed");
+  }catch(e){toast("Couldn't remove that. Try again.")}
+  render();
+}
+function openLb(src,cap){const lb=$("#lb");lb.innerHTML=`<button data-act="lbclose" aria-label="Close">✕</button><img src="${esc(src)}" alt=""><div class="cap">${esc(cap||"")}</div>`;lb.hidden=false}
+
+/* ---------- photos ---------- */
+function prepareImage(file){
+  // Downsize to a JPEG blob. If Safari can show it but can't re-encode it, keep the original file.
+  return new Promise(resolve=>{
+    const src=URL.createObjectURL(file);
+    const im=new Image();
+    const keep=()=>{URL.revokeObjectURL(src);resolve(file)};
+    im.onload=()=>{
+      try{
+        let w=im.naturalWidth,h=im.naturalHeight;
+        if(!w||!h)return keep();
+        const sc=Math.min(1,1600/Math.max(w,h));w=Math.max(1,Math.round(w*sc));h=Math.max(1,Math.round(h*sc));
+        const c=document.createElement("canvas");c.width=w;c.height=h;
+        const x=c.getContext("2d");if(!x)return keep();
+        x.fillStyle="#fff";x.fillRect(0,0,w,h);x.drawImage(im,0,0,w,h);
+        c.toBlob(b=>{URL.revokeObjectURL(src);resolve(b&&b.size>500?b:file)},"image/jpeg",.85);
+      }catch(e){keep()}
+    };
+    im.onerror=keep;
+    im.src=src;
+  });
+}
+async function addFiles(list,input){
+  const files=[...(list||[])];
+  if(input)input.value=""; // reset now so the camera can be used again right away, even if iOS reuses a filename
+  if(!files.length)return;
+  const room=MAX_PHOTOS-S.areas.length-S.adding;
+  if(room<=0){toast(`Up to ${MAX_PHOTOS} photos. Remove one to add another.`);return}
+  const take=files.slice(0,room);
+  if(files.length>room)toast(`Added the first ${room}. The limit is ${MAX_PHOTOS} photos.`);
+  S.adding+=take.length;render();
+  for(const f of take){
+    try{
+      const blob=await prepareImage(f);
+      S.areas.push({id:uid(),name:"",blob,url:URL.createObjectURL(blob),analysis:null});
+    }catch(e){console.error(e);toast("Couldn't add that photo. Try taking it again.")}
+    S.adding--;render();
+  }
+}
+function removeArea(id){
+  const a=S.areas.find(x=>x.id===id);if(a)URL.revokeObjectURL(a.url);
+  S.areas=S.areas.filter(x=>x.id!==id);render();
+}
+// When there are more photos than one call can carry, tile them into labeled collages.
+async function imagesForCall(){
+  const n=S.areas.length,max=Math.max(1,S.imgMax);
+  if(n<=max)return {blobs:S.areas.map(a=>a.blob),collage:false};
+  const per=Math.ceil(n/max),groups=[];
+  for(let i=0;i<n;i+=per)groups.push(S.areas.slice(i,i+per).map((a,j)=>({a,no:i+j+1})));
+  const out=[];
+  for(const g of groups){
+    const cols=g.length<=2?g.length:Math.ceil(Math.sqrt(g.length)),rows=Math.ceil(g.length/cols),cell=900,gap=12;
+    const c=document.createElement("canvas");c.width=cols*cell+(cols-1)*gap;c.height=rows*cell+(rows-1)*gap;
+    const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);
+    for(let k=0;k<g.length;k++){
+      const im=await loadImg(g[k].a.url);const cx=(k%cols)*(cell+gap),cy=Math.floor(k/cols)*(cell+gap);
+      if(im){const s=Math.max(cell/im.naturalWidth,cell/im.naturalHeight),w=im.naturalWidth*s,h=im.naturalHeight*s;
+        x.save();x.beginPath();x.rect(cx,cy,cell,cell);x.clip();x.drawImage(im,cx+(cell-w)/2,cy+(cell-h)/2,w,h);x.restore()}
+      x.fillStyle="rgba(0,0,0,.72)";x.fillRect(cx+14,cy+14,250,72);x.fillStyle="#fff";x.font="bold 48px sans-serif";x.textBaseline="middle";x.fillText("Photo "+g[k].no,cx+30,cy+51);
+    }
+    const b=await new Promise(r=>c.toBlob(r,"image/jpeg",.85));if(b)out.push(b);
+  }
+  return {blobs:out,collage:true};
+}
+function loadImg(url){return new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=url})}
+
+/* ---------- AI plan ---------- */
+function goalLine(){
+  if(S.goal==="custom"){const g=S.customGoal.trim();return g?`THE USER'S OWN GOAL (main prioritization target): "${g}"`:GOAL_TEXT.impact}
+  return GOAL_TEXT[S.goal];
+}
+function buildPrompt(collage){
+  const n=S.areas.length;
+  return `You are the planning engine for cleand, a home-reset app that removes decision-making for someone facing several messy areas at once. You decide; they just follow the plan.
+
+Attached: ${n} photo${n>1?"s":""} of different areas of the home, numbered Photo 1 to Photo ${n}${collage?". To fit the upload limit, some photos are tiled together; each tile has its number in a dark label in its top-left corner":" in the order attached"}.
+
+TIME AVAILABLE: ${S.time} minutes.
+ENERGY: ${ENERGY_TEXT[S.energy]}
+GOAL: ${goalLine()}
+CONTEXT: ${S.context.trim()||"none given"}
+
+Look across ALL photos together, not one at a time. For each area, silently judge severity, urgency, effort, visible payoff, what function is lost, and likely time needed. Look for dishes, trash, laundry, clutter, crowded surfaces, items on the floor, blocked walkways, food or perishables, spills, obvious kid or pet hazards, unusable surfaces, and unusually high-impact quick wins.
+
+PRIORITY ORDER:
+1. Immediate safety: spills, food or perishables, pet or kid hazards, blocked walkways.
+2. Restore useful function: clear the sink, make a counter usable, expose the bed, clear a walkway, restore seating, make the entry usable.
+3. Match the goal above.
+
+RULES:
+- Reduce decisions. Concrete starting actions ("Trash goes in the trash. Everything that belongs elsewhere goes into one basket."), never vague tasks like "clean kitchen".
+- Finish a useful cluster in one area before switching rooms. Don't bounce between rooms.
+- Prefer containment and visible wins over sorting. No perfection cleaning, drawer organizing, micro-sorting or sentimental decisions.
+- Usually 3-6 tasks. Never a giant list.
+- Task minutes must add up to AT MOST ${S.time} and should use most of it (at least ${Math.max(1,Math.round(S.time*0.8))}).
+- It's fine to leave an area out entirely if it isn't worth the time today.
+- Tone: neutral, practical, never shaming. Never call anything gross, disgusting or embarrassing. Words like crowded, cluttered, blocked, visually busy are fine.
+- Don't invent exact item counts you can't see.
+- Area names: short and plain, like "Kitchen", "Living room", "Entryway", "Bedroom", "Desk". If two photos show the same room, use the same name.
+
+Reply with ONLY a JSON object in this exact shape:
+{"areas":[{"photo":1,"name":"Kitchen","saw":"one short neutral sentence on what matters in this photo","caution":"visible safety note, or empty string"}],
+ "planTitle":"Your ${S.time}-minute reset",
+ "startLine":"Start in the kitchen.",
+ "strategy":"one or two sentences on why this order",
+ "tasks":[{"photo":1,"area":"Kitchen","title":"Contain the dishes","action":"what exactly to do, 1-2 sentences","minutes":7,"why":"short reason, or empty string"}],
+ "stopRule":"When your ${S.time} minutes are up, stop. A partially reset house is still a reset.",
+ "ifFinishEarly":"ONE small optional action, not a new project"}`;
+}
+function errCopy(e){const c=e&&e.code;return({
+  bad_key:"That Gemini key didn't work. Paste it again in Settings.",
+  rate_limited:"Gemini's free limit is used up for now. Wait a minute and tap Build my plan again.",
+  refused:"Gemini wouldn't plan from these photos. Try removing one and running it again.",
+  invalid_json:"The plan came back scrambled. Tap Build my plan again.",
+  too_large:"Too many photos at once. Remove one or two and try again.",
+  offline:"No internet connection. Try again when you're back online.",
+  no_model:"Gemini couldn't find a model to use. Tell Claude so it can update cleand."
+})[c]||"Couldn't reach Gemini. Try again."}
+
+async function buildAIPlan(){
+  if(!S.areas.length){S.err="Add at least one photo first.";return render()}
+  if(!getKey()){openSettings();return}
+  S.err=null;S.busy=true;S.ctl=new AbortController();render();window.scrollTo({top:0,behavior:"smooth"});
+  try{
+    const {blobs,collage}=await imagesForCall();
+    const res=await S.sample.json(buildPrompt(collage),{images:blobs,signal:S.ctl.signal,cache:false});
+    applyResult(res);
+  }catch(e){
+    if(e&&e.code==="cancelled"){}
+    else if(e&&e.code==="bad_key"){S.err=errCopy(e);setKey("");openSettings()}
+    else{console.error(e);S.err=errCopy(e)}
+  }finally{S.busy=false;S.ctl=null;render();window.scrollTo({top:0})}
+}
+function applyResult(res){
+    if(!res||!Array.isArray(res.tasks)||!res.tasks.length)throw {code:"invalid_json"};
+    // apply per-photo analysis
+    (res.areas||[]).forEach(x=>{const a=S.areas[(+x.photo||0)-1];if(!a)return;a.analysis={saw:String(x.saw||""),caution:String(x.caution||"")};if(x.name)a.name=String(x.name).slice(0,40)});
+    S.plan=makePlan({
+      title:res.planTitle,startLine:res.startLine,strategy:res.strategy,stopRule:res.stopRule,extra:res.ifFinishEarly,ai:true,
+      tasks:res.tasks.map(t=>({photo:+t.photo||null,area:String(t.area||(S.areas[(+t.photo||1)-1]||{}).name||"Area"),title:String(t.title||"Reset"),action:String(t.action||""),minutes:+t.minutes||5,why:String(t.why||"")})),
+      saw:S.areas.map((a,i)=>({photo:i+1,name:a.name||`Photo ${i+1}`,saw:a.analysis?a.analysis.saw:"",caution:a.analysis?a.analysis.caution:""}))
+    });
+    S.view="plan";savePlan();saveBefores(S.plan,[...S.areas]);
+}
+function makePlan(p){
+  // enforce the time budget
+  let left=S.time;const tasks=[];
+  for(const t of p.tasks){if(left<=0)break;const m=Math.max(1,Math.min(Math.round(t.minutes),left));tasks.push({...t,id:uid(),minutes:m,done:false});left-=m}
+  return {
+    id:uid(),createdAt:new Date().toISOString(),minutes:S.time,ai:!!p.ai,
+    title:String(p.title||`Your ${S.time}-minute reset`),startLine:String(p.startLine||""),strategy:String(p.strategy||""),
+    stopRule:String(p.stopRule||`When your ${S.time} minutes are up, stop. A partially reset house is still a reset.`),
+    extra:String(p.extra||""),tasks,saw:p.saw||[],startedAt:null,before:[],after:[],
+    goal:S.goal==="custom"?(S.customGoal.trim()||"My own goal"):(GOALS.find(g=>g[0]===S.goal)||[])[1]||"",
+    energy:(ENERGY.find(e=>e[0]===S.energy)||[])[1]||""
+  };
+}
+
+/* ---------- plan interactions ---------- */
+function toggleTask(id,on){const t=S.plan&&S.plan.tasks.find(x=>x.id===id);if(!t)return;t.done=on;savePlan();renderPlanParts()}
+function startClock(){if(!S.plan)return;S.plan.startedAt=new Date().toISOString();savePlan();render()}
+function remainingMs(){if(!S.plan||!S.plan.startedAt)return null;return S.plan.minutes*60000-(Date.now()-new Date(S.plan.startedAt).getTime())}
+function clockHTML(){
+  const r=remainingMs();
+  if(r===null)return `<div class="clock"><div><div class="t">${S.plan.minutes}:00</div><div class="k">Clock isn't running</div></div><button class="btn" data-act="clock">Start the clock</button></div>`;
+  if(r<=0)return `<div class="clock over"><div><div class="t">Time's up</div><div class="k">Stop here. A partially reset house is still a reset.</div></div></div>`;
+  const s=Math.ceil(r/1000),mm=Math.floor(s/60),ss=String(s%60).padStart(2,"0");
+  return `<div class="clock"><div><div class="t">${mm}:${ss}</div><div class="k">left of ${S.plan.minutes} minutes</div></div></div>`;
+}
+function runTick(){clearInterval(S.tick);S.tick=null;if(S.view==="plan"&&S.plan&&S.plan.startedAt&&remainingMs()>0){S.tick=setInterval(()=>{const el=$("#clock");if(el)el.innerHTML=clockHTML();if(remainingMs()<=0){clearInterval(S.tick);S.tick=null;renderPlanParts()}},1000)}}
+function planText(){
+  const p=S.plan;
+  return `cleand · ${p.title}\n${p.startLine?p.startLine+"\n":""}\n${p.tasks.map((t,i)=>`${i+1}. ${t.area}: ${t.title} (${t.minutes} min)\n   ${t.action}`).join("\n\n")}\n\nSTOP: ${p.stopRule}`;
+}
+async function copyPlan(){
+  const text=planText();
+  try{await navigator.clipboard.writeText(text);toast("Plan copied")}catch(e){S.copyText=text;render();const o=$("#copyout");if(o){o.focus();o.select()}}
+}
+function newReset(){
+  S.plan=null;S.view="setup";S.err=null;S.copyText=null;
+  S.areas.forEach(a=>URL.revokeObjectURL(a.url));S.areas=[];S.customGoal="";S.context="";
+  savePlan();render();window.scrollTo({top:0});
+}
+
+/* ---------- render ---------- */
+function render(){
+  const first=S.plan?"plan":"setup",cur=S.view==="wins"?"wins":first;
+  $("#topnav").innerHTML=`<button data-act="nav" data-v="${first}" ${cur===first?'aria-current="page"':""}>${S.plan?"Plan":"Start"}</button><button data-act="nav" data-v="wins" ${cur==="wins"?'aria-current="page"':""}>Wins</button>`;
+  const m=$("#main");
+  if(S.busy)m.innerHTML=workingHTML();
+  else if(S.view==="wins")m.innerHTML=winsHTML();
+  else if(S.view==="plan"&&S.plan)m.innerHTML=planHTML();
+  else m.innerHTML=setupHTML();
+  runTick();
+}
+function workingHTML(){
+  return `<div class="sec working" style="margin-top:16px"><div class="spinner" aria-hidden="true"></div><h2>Looking at your house…</h2>
+  <p style="margin:0;max-width:34ch">Comparing all ${S.areas.length} area${S.areas.length>1?"s":""} for safety, function and payoff in ${S.time} minutes. This usually takes under a minute.</p>
+  <div class="strip">${S.areas.map(a=>`<img src="${a.url}" alt="">`).join("")}</div>
+  <button class="btn" data-act="stop">Stop</button></div>`;
+}
+function setupHTML(){
+  const tip=getKey()?"":`<div class="keycard"><h2>One-time setup</h2><p class="hint" style="margin-top:4px">cleand needs a free Gemini key to look at your photos. It takes about two minutes.</p><button class="btn primary" data-act="settings" style="margin-top:10px;width:100%">Set up photo reading</button></div>`;
+  const n=S.areas.length;
+  return `
+  <section class="hero"><h1>Show me the mess.<br>I'll decide what matters.</h1><p>Add every messy area. cleand compares them all and hands you one short, timed plan.</p></section>
+
+  <section class="sec">
+    <h2><span class="n">1</span>How much time do you actually have?</h2>
+    <div class="timeline"><span class="timebig" id="timebig">${S.time}</span><span>minutes</span></div>
+    <input type="range" id="trange" min="5" max="120" step="5" value="${S.time}" aria-label="Minutes available">
+    <div class="chips">${TIMES.map(t=>`<button class="chip" data-act="time" data-v="${t}" aria-pressed="${S.time===t}">${t===60?"1 hour":t+" min"}</button>`).join("")}</div>
+  </section>
+
+  <section class="sec">
+    <h2><span class="n">2</span>Add the messy areas</h2>
+    <div class="pacts">
+      <label class="pact main">${icon.cam}<b>Take a photo</b><small>One area, then tap again for the next</small><input id="camin" type="file" accept="image/*" capture="environment"></label>
+      <label class="pact">${icon.lib}<b>Choose photos</b><small>Pick several from your library</small><input id="libin" type="file" accept="image/*" multiple></label>
+    </div>
+    ${n||S.adding?`<div class="pcount"><span>${n} photo${n===1?"":"s"} added</span><span class="m">${MAX_PHOTOS-n-S.adding} left</span></div>
+    <div class="thumbs">${S.areas.map((a,i)=>`<div class="th"><img src="${a.url}" alt="Photo ${i+1}"><span class="no">${i+1}</span><button class="x" data-act="rm" data-id="${a.id}" aria-label="Remove photo ${i+1}">✕</button></div>`).join("")}${Array.from({length:S.adding},()=>`<div class="th busy"><div class="spinner" style="width:26px;height:26px"></div></div>`).join("")}</div>`
+    :`<div class="emptyp">No areas yet. Snap each messy spot, or pick them from Photos.</div>`}
+  </section>
+
+  <section class="sec">
+    <h2><span class="n">3</span>Energy level</h2>
+    <div class="seg" style="margin-top:12px">${ENERGY.map(([v,l,s])=>`<button data-act="energy" data-v="${v}" aria-pressed="${S.energy===v}">${l}<small>${s}</small></button>`).join("")}</div>
+  </section>
+
+  <section class="sec">
+    <h2><span class="n">4</span>What is your goal?</h2>
+    <div class="chips" style="margin-top:12px">${GOALS.map(([k,l])=>`<button class="chip" data-act="goal" data-v="${k}" aria-pressed="${S.goal===k}">${l}</button>`).join("")}</div>
+    <div ${S.goal==="custom"?"":"hidden"}><span class="lbl">Your goal</span><input id="cgoal" class="inp" type="text" value="${esc(S.customGoal)}" placeholder="Get the living room guest-ready"></div>
+    <span class="lbl">Anything else? <span style="text-transform:none;letter-spacing:0;font-weight:500">(optional)</span></span>
+    <textarea id="ctx" placeholder="People are coming over · I need the kitchen usable · Kids are about to come home">${esc(S.context)}</textarea>
+  </section>
+
+  <div class="go">
+    ${S.err?`<div class="note err" style="margin:0 0 12px">${esc(S.err)}</div>`:""}
+    ${tip}
+    <button class="btn primary big" data-act="build" ${n?"":"disabled"} style="margin-top:12px">Build my plan</button>
+    ${n?"":`<p class="hint" style="text-align:center">Add at least one photo. cleand figures out the rest.</p>`}
+  </div>`;
+}
+function planHTML(){
+  const p=S.plan;
+  return `<section class="planhero"><div class="eyebrow">Your plan · ${fmtTime(p.minutes)}</div>
+    <h1>${esc(p.title)}</h1>${p.startLine||p.strategy?`<p>${esc([p.startLine,p.strategy].filter(Boolean).join(" "))}</p>`:""}
+    <div id="clock">${clockHTML()}</div></section>
+  <div class="prog" id="prog"></div>
+  <ol class="tasks">${p.tasks.map((t,i)=>`<li><label class="task" data-task="${t.id}"><input type="checkbox" data-check="${t.id}" ${t.done?"checked":""}><span class="box">${i+1}</span>
+    <span class="tb"><span class="tarea">${esc(t.area)}<span class="nowpill" hidden>Now</span></span><span class="ttitle" style="display:block">${esc(t.title)}</span>${t.action?`<span class="tact" style="display:block">${esc(t.action)}</span>`:""}${t.why?`<span class="twhy">${esc(t.why)}</span>`:""}</span>
+    <span class="tmin">${t.minutes} min</span></label></li>`).join("")}</ol>
+  <div class="stop"><b>Stopping rule</b>${esc(p.stopRule)}</div>
+  <div id="extra"></div>
+  ${p.saw&&p.saw.length?`<details class="saw" open><summary>What cleand saw</summary>${p.saw.map(s=>{const a=S.areas[s.photo-1],bf=(p.before||[]).find(x=>x.photo===s.photo),src=a?a.url:bf?blobUrl(bf.id):"";return `<div class="sawrow">${src?`<img src="${src}" alt="">`:""}<div><b>${esc(s.name)}</b>${s.saw?` · ${esc(s.saw)}`:""}${s.caution?`<br><span style="color:var(--danger)">Watch for: ${esc(s.caution)}</span>`:""}</div></div>`}).join("")}</details>`:""}
+  ${afterHTML(p)}
+  ${S.copyText?`<div class="sec"><p class="hint" style="margin:0 0 8px">Copy didn't work here. Select the text below and copy it.</p><textarea id="copyout" class="copyout" readonly>${esc(S.copyText)}</textarea></div>`:""}
+  <div class="acts"><button class="btn" data-act="copy">Copy plan</button>${S.areas.length?`<button class="btn" data-act="edit">Change settings</button>`:""}<button class="btn primary" data-act="new">New reset</button></div>`;
+}
+function afterHTML(p){
+  const up=S.uploading[p.id]||0,list=p.after||[];
+  return `<section class="sec after" id="aftersec"><h2>After photos</h2>
+  <p class="hint" style="margin-top:4px">${S.assets?"Snap what you reset. It's saved to Wins next to the before shots, so you can admire it later.":"Photo saving isn't available in this browser."}</p>
+  ${list.length||up?`<div class="thumbs">${list.map((x,i)=>`<div class="th"><button class="open" data-act="lb" data-src="${blobUrl(x.id)}" data-cap="After ${i+1}"><img src="${blobUrl(x.id)}" alt="After photo ${i+1}"></button></div>`).join("")}${Array.from({length:up},()=>`<div class="th busy"><div class="spinner" style="width:26px;height:26px"></div></div>`).join("")}</div>`:""}
+  ${S.assets?`<div class="pacts"><label class="pact main">${icon.cam}<b>Take after photo</b><small>Tap again for the next area</small><input type="file" accept="image/*" capture="environment" data-after="${p.id}"></label>
+  <label class="pact">${icon.lib}<b>Choose photos</b><small>From your library</small><input type="file" accept="image/*" multiple data-after="${p.id}"></label></div>`:""}</section>`;
+}
+const fmtDay=iso=>{const d=new Date(iso);if(isNaN(d))return"";const o={weekday:"short",month:"short",day:"numeric"};if(d.getFullYear()!==new Date().getFullYear())o.year="numeric";return d.toLocaleDateString(undefined,o)};
+function miniGrid(arr,label){
+  if(!arr||!arr.length)return `<div class="mini"><span class="none">${label==="Before"?"No before photos saved":"None yet"}</span></div>`;
+  return `<div class="mini">${arr.map((x,i)=>`<button data-act="lb" data-src="${blobUrl(x.id)}" data-cap="${esc(label+(x.name?" · "+x.name:" "+(i+1)))}" aria-label="${label} photo ${i+1}"><img src="${blobUrl(x.id)}" alt="" loading="lazy"></button>`).join("")}</div>`;
+}
+function winsHTML(){
+  const head=`<div class="winshead"><h1>Wins</h1><p>Every reset, before and after.</p></div>`;
+  if(!S.db)return head+`<div class="emptywins">${S.runtimeChecked?"Wins can't be saved in this browser (private browsing?).":"Loading…"}</div>`;
+  if(!S.winsReady)return head+`<div class="emptywins">Loading…</div>`;
+  if(!S.wins.length)return head+`<div class="emptywins"><h2>No resets yet</h2>Build a plan, then add an after photo when you're done. It'll show up here.</div>`;
+  return head+S.wins.map(w=>{
+    const done=(w.tasks||[]).filter(t=>t.done).length,total=(w.tasks||[]).length,isCur=S.plan&&S.plan.id===w.id,up=S.uploading[w.id]||0;
+    const after=isCur?(S.plan.after||[]):(w.after||[]);
+    return `<article class="win"><div class="winmeta"><span>${fmtDay(w.createdAt)}</span><span>${fmtTime(w.minutes||0)}</span><span>${done}/${total} steps</span></div>
+    <h3>${esc(w.title||"Reset")}</h3>${w.goal||w.energy?`<div class="hint" style="margin-top:2px">${esc([w.goal,w.energy].filter(Boolean).join(" · "))}</div>`:""}
+    <div class="pair"><div class="col"><div class="k">Before</div>${miniGrid(w.before,"Before")}</div><div class="col a"><div class="k">After${up?` · saving ${up}…`:""}</div>${miniGrid(after,"After")}</div></div>
+    <div class="winacts">${S.assets?`<label class="pact">${icon.cam}<span>Add after</span><input type="file" accept="image/*" multiple data-after="${w.id}"></label>`:""}
+    ${isCur?`<button class="btn" data-act="nav" data-v="plan">Open plan</button>`:""}
+    <span class="spacer"></span>${S.confirmDel===w.id?`<button class="btn" data-act="delno">Keep</button><button class="btn danger solid" data-act="delwin" data-id="${w.id}">Delete for good</button>`:`<button class="btn ghost danger" data-act="delask" data-id="${w.id}">Remove</button>`}</div></article>`;
+  }).join("")+`<div style="height:40px"></div>`;
+}
+function renderPlanParts(){
+  const p=S.plan;if(!p||S.view!=="plan")return;
+  const done=p.tasks.filter(t=>t.done).length,total=p.tasks.length,doneMin=p.tasks.filter(t=>t.done).reduce((s,t)=>s+t.minutes,0);
+  const pr=$("#prog");if(pr)pr.innerHTML=`<div class="bar"><div style="width:${total?done/total*100:0}%"></div></div><div class="progline"><span>${done} of ${total} steps done</span><span class="m">${doneMin}/${p.tasks.reduce((s,t)=>s+t.minutes,0)} min</span></div>`;
+  const next=p.tasks.find(t=>!t.done);
+  document.querySelectorAll("[data-task]").forEach(el=>{const now=next&&el.dataset.task===next.id;el.classList.toggle("now",!!now);el.querySelector(".nowpill").hidden=!now});
+  const ex=$("#extra");
+  if(ex){const r=remainingMs();ex.innerHTML=done===total&&total&&p.extra&&(r===null||r>0)?`<div class="extra"><b>Done early. One optional thing:</b>${esc(p.extra)}<br><span style="opacity:.85">Or stop now. That counts too.</span></div>`:""}
+  const ck=$("#clock");if(ck)ck.innerHTML=clockHTML();
+  const af=$("#aftersec");if(af){const r=remainingMs();af.classList.toggle("lit",(total&&done===total)||(r!==null&&r<=0))}
+}
+
+/* ---------- events ---------- */
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-act]");if(!b)return;
+  const a=b.dataset.act,v=b.dataset.v;
+  if(a==="time"){S.time=+v;const r=$("#trange");if(r)r.value=S.time;$("#timebig").textContent=S.time;document.querySelectorAll('[data-act="time"]').forEach(x=>x.setAttribute("aria-pressed",String(+x.dataset.v===S.time)))}
+  else if(a==="energy"){S.energy=+v;document.querySelectorAll('[data-act="energy"]').forEach(x=>x.setAttribute("aria-pressed",String(+x.dataset.v===S.energy)))}
+  else if(a==="goal"){S.goal=v;render();if(v==="custom")setTimeout(()=>{const i=$("#cgoal");i&&i.focus()},30)}
+  else if(a==="rm")removeArea(b.dataset.id);
+  else if(a==="build")buildAIPlan();
+  else if(a==="settings")openSettings();
+  else if(a==="closesheet")closeSettings();
+  else if(a==="savekey")saveKey();
+  else if(a==="forgetkey"){setKey("");closeSettings();toast("Key removed from this phone")}
+  else if(a==="stop"){S.ctl&&S.ctl.abort()}
+  else if(a==="clock")startClock();
+  else if(a==="copy")copyPlan();
+  else if(a==="new")newReset();
+  else if(a==="edit"){S.view="setup";render();window.scrollTo({top:0})}
+  else if(a==="toplan"){S.view="plan";S.copyText=null;render();renderPlanParts();window.scrollTo({top:0})}
+  else if(a==="nav"){if(!S.busy){S.view=v;S.copyText=null;S.confirmDel=null;render();window.scrollTo({top:0})}}
+  else if(a==="lb")openLb(b.dataset.src,b.dataset.cap);
+  else if(a==="lbclose")$("#lb").hidden=true;
+  else if(a==="delask"){S.confirmDel=b.dataset.id;render()}
+  else if(a==="delno"){S.confirmDel=null;render()}
+  else if(a==="delwin")deleteWin(b.dataset.id);
+  else if(a==="home"){if(!S.busy){S.view=S.plan?"plan":"setup";render();renderPlanParts();window.scrollTo({top:0})}}
+});
+document.addEventListener("input",e=>{
+  const t=e.target;
+  if(t.id==="trange"){S.time=+t.value;$("#timebig").textContent=S.time;document.querySelectorAll('[data-act="time"]').forEach(x=>x.setAttribute("aria-pressed",String(+x.dataset.v===S.time)))}
+  else if(t.id==="cgoal")S.customGoal=t.value;
+  else if(t.id==="ctx")S.context=t.value;
+});
+document.addEventListener("change",e=>{
+  const t=e.target;
+  if(t.id==="camin"||t.id==="libin")addFiles(t.files,t);
+  else if(t.dataset.check)toggleTask(t.dataset.check,t.checked);
+  else if(t.dataset.after)addAfters(t.files,t,t.dataset.after);
+});
+$("#lb").addEventListener("click",e=>{if(e.target.id==="lb")$("#lb").hidden=true});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")$("#lb").hidden=true});
+const _render=render;render=function(){_render();if(S.view==="plan")renderPlanParts()};
+
+/* ---------- key + settings ---------- */
+function getKey(){try{return localStorage.getItem("cleand_gemini_key")||""}catch(e){return ""}}
+function setKey(k){try{k?localStorage.setItem("cleand_gemini_key",k):localStorage.removeItem("cleand_gemini_key")}catch(e){}}
+let sheetErr="",sheetBusy=false;
+function openSettings(){sheetErr="";renderSheet();$("#sheet").hidden=false}
+function closeSettings(){$("#sheet").hidden=true;render()}
+function renderSheet(){
+  const k=getKey();
+  $("#sheet").innerHTML=`<div class="sheet" role="dialog" aria-modal="true" aria-label="Settings">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><h2>Photo reading</h2><button class="iconbtn" data-act="closesheet" aria-label="Close">✕</button></div>
+  <p class="hint" style="margin-top:6px">cleand uses Google Gemini to look at your photos. The key is free and stays on this phone.</p>
+  <ol><li>Open <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> and sign in with Google.</li>
+  <li>Tap <b>Create API key</b>, then copy it.</li><li>Paste it below and tap <b>Save</b>.</li></ol>
+  <span class="lbl">Gemini API key</span>
+  <input id="keyin" class="inp" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Paste key here" value="${esc(k)}" style="font-family:var(--mono);font-size:15px">
+  ${sheetErr?`<div class="note err">${esc(sheetErr)}</div>`:""}
+  <button class="btn primary big" data-act="savekey" style="margin-top:12px" ${sheetBusy?"disabled":""}>${sheetBusy?"Checking…":"Save"}</button>
+  ${k?`<button class="btn ghost danger" data-act="forgetkey" style="margin-top:8px;width:100%">Remove key from this phone</button>`:""}
+  <p class="hint" style="margin-top:14px">On Google's free tier, Google may use what you send to improve its products. Your photos and Wins are stored only on this phone.</p></div>`;
+}
+async function saveKey(){
+  const k=($("#keyin").value||"").trim();
+  if(!k){sheetErr="Paste your key first.";return renderSheet()}
+  sheetBusy=true;sheetErr="";renderSheet();
+  try{
+    const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=1",{headers:{"x-goog-api-key":k}});
+    if(r.status===400||r.status===401||r.status===403){sheetErr="Google didn't accept that key. Copy it again and paste the whole thing.";return}
+    setKey(k);$("#sheet").hidden=true;toast("Photo reading is on");render();
+  }catch(e){sheetErr="Couldn't reach Google. Check your connection and try again."}
+  finally{sheetBusy=false;if(!$("#sheet").hidden)renderSheet()}
+}
+$("#sheet").addEventListener("click",e=>{if(e.target.id==="sheet")closeSettings()});
+
+/* ---------- Gemini (stands in for the photo-reading call) ---------- */
+const MODELS=["gemini-3.5-flash","gemini-3.8-flash","gemini-flash-latest","gemini-2.5-flash"];
+const toB64=b=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(",")[1]);r.onerror=rej;r.readAsDataURL(b)});
+function parseJSONLoose(t){
+  try{return JSON.parse(t)}catch(e){}
+  const f=t.match(/```(?:json)?\s*([\s\S]*?)```/),body=f?f[1]:t,a=body.indexOf("{"),b=body.lastIndexOf("}");
+  if(a>=0&&b>a){try{return JSON.parse(body.slice(a,b+1))}catch(e){}}
+  throw {code:"invalid_json"};
+}
+async function geminiJSON(prompt,opts={}){
+  const key=getKey();if(!key)throw {code:"bad_key"};
+  const parts=[{text:prompt}];
+  for(const b of (opts.images||[]))parts.push({inline_data:{mime_type:b.type&&/^image\//.test(b.type)?b.type:"image/jpeg",data:await toB64(b)}});
+  const body=JSON.stringify({contents:[{role:"user",parts}],generationConfig:{responseMimeType:"application/json",temperature:0.4}});
+  let saved="";try{saved=localStorage.getItem("cleand_model")||""}catch(e){}
+  const list=[...new Set([saved,...MODELS].filter(Boolean))];
+  for(const m of list){
+    let r;
+    try{r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`,{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":key},body,signal:opts.signal})}
+    catch(e){if(e&&e.name==="AbortError")throw {code:"cancelled"};throw {code:navigator.onLine===false?"offline":"upstream_error"}}
+    if(r.status===404)continue;
+    let j=null;try{j=await r.json()}catch(e){}
+    const msg=(j&&j.error&&j.error.message)||"";
+    if(r.status===400&&/not found|not supported|unknown model/i.test(msg))continue;
+    if(r.status===400&&/api key/i.test(msg)||r.status===401||r.status===403)throw {code:"bad_key"};
+    if(r.status===429)throw {code:"rate_limited"};
+    if(r.status===413)throw {code:"too_large"};
+    if(!r.ok)throw {code:"upstream_error",message:msg};
+    try{localStorage.setItem("cleand_model",m)}catch(e){}
+    const c=j&&j.candidates&&j.candidates[0];
+    if(!c||(j.promptFeedback&&j.promptFeedback.blockReason)||c.finishReason==="SAFETY")throw {code:"refused"};
+    const text=((c.content&&c.content.parts)||[]).map(p=>p.text||"").join("");
+    if(!text.trim())throw {code:"invalid_json"};
+    return parseJSONLoose(text);
+  }
+  throw {code:"no_model"};
+}
+
+/* ---------- on-device storage (IndexedDB) ---------- */
+function openIDB(){return new Promise((res,rej)=>{if(!window.indexedDB)return rej();const q=indexedDB.open("cleand",1);q.onupgradeneeded=()=>{const d=q.result;d.createObjectStore("docs");d.createObjectStore("blobs")};q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
+function idbReq(d,store,mode,fn){return new Promise((res,rej)=>{const tx=d.transaction(store,mode),st=tx.objectStore(store);let out;const r=fn(st);if(r)r.onsuccess=()=>{out=r.result};tx.oncomplete=()=>res(out);tx.onerror=tx.onabort=()=>rej(tx.error)})}
+function makeLocalStore(d){
+  const listeners=[];
+  async function fire(){
+    if(!listeners.length)return;
+    const all=await idbReq(d,"docs","readonly",st=>st.getAll(IDBKeyRange.bound("resets/","resets/￿")));
+    const docs=(all||[]).sort((a,b)=>(a.createdAt<b.createdAt?1:-1)).slice(0,200).map(v=>({id:v.id,exists:true,data:()=>JSON.parse(JSON.stringify(v))}));
+    listeners.forEach(f=>f({docs,size:docs.length,empty:!docs.length}));
+  }
+  const db={
+    doc:p=>({
+      get:async()=>{const v=await idbReq(d,"docs","readonly",st=>st.get(p));return {id:p.split("/").pop(),exists:v!==undefined,data:()=>v===undefined?undefined:JSON.parse(JSON.stringify(v))}},
+      set:async v=>{await idbReq(d,"docs","readwrite",st=>st.put(JSON.parse(JSON.stringify(v)),p));if(p.startsWith("resets/"))fire()},
+      delete:async()=>{await idbReq(d,"docs","readwrite",st=>st.delete(p));if(p.startsWith("resets/"))fire()}
+    }),
+    collection:()=>{const q={orderBy:()=>q,limit:()=>q,onSnapshot:(f,err)=>{listeners.push(f);fire().catch(e=>err&&err(e));return()=>{}}};return q}
+  };
+  const assets={
+    upload:async blob=>{const id=uid().replace(/-/g,"");await idbReq(d,"blobs","readwrite",st=>st.put(blob,id));return {id}},
+    get:id=>idbReq(d,"blobs","readonly",st=>st.get(id)).catch(()=>null),
+    delete:async id=>{await idbReq(d,"blobs","readwrite",st=>st.delete(id));return {deleted:true}}
+  };
+  return {db,assets};
+}
+
+/* ---------- boot ---------- */
+render();
+(async function boot(){
+  S.sample={json:geminiJSON};S.canImages=true;S.imgMax=10;
+  try{const d=await openIDB();const st=makeLocalStore(d);S.db=st.db;S.assets=st.assets;
+    if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
+  }catch(e){console.warn("no local storage",e)}
+  const db=S.db;
+  if(db){try{const s=await db.doc("session/current").get();const d=s.exists?s.data():null;
+    let plan=null;if(d&&d.planId){const r=await db.doc("resets/"+d.planId).get();if(r.exists)plan=r.data()}
+    if(plan&&Array.isArray(plan.tasks)&&!S.plan&&!S.busy){S.plan=plan;S.plan.before=S.plan.before||[];S.plan.after=S.plan.after||[];
+      const age=Date.now()-new Date(S.plan.createdAt).getTime();
+      if(age<12*3600e3&&!S.areas.length)S.view="plan";
+    }}catch(e){console.warn(e)}
+    db.collection("resets").orderBy("createdAt","desc").limit(200).onSnapshot(snap=>{
+      S.wins=snap.docs.map(d=>({id:d.id,...d.data()}));S.winsReady=true;if(S.view==="wins"&&!S.busy)render();
+    },e=>{console.warn(e);S.winsReady=true;if(S.view==="wins")render()});
+  }
+  S.runtimeChecked=true;render();
+})();
+
+</script>
+</body></html>
