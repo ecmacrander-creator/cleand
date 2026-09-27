@@ -277,10 +277,29 @@ const TIMES=[10,20,30,60,90];
 const ENERGY=[[1,"Bare minimum","Low effort"],[2,"Functional","Steady"],[3,"I can move","Deeper reset"]];
 const GOALS=[["quick","Quick win"],["declutter","Declutter"],["organize","Organization"],["impact","Biggest impact"],["custom","My own goal"]];
 const GOAL_TEXT={
-  quick:"QUICK WIN. Favor small tasks, obvious visual improvement, low decision load and fast motivation.",
-  declutter:"DECLUTTER. Favor loose clutter, trash, laundry, clearing floors, removing items from surfaces, and containment (one basket) when sorting would take too long.",
-  organize:"ORGANIZATION. Favor grouping like items, putting obvious items back, creating simple functional zones. Do NOT turn this into drawer organizing, micro-sorting, sentimental decisions or storage systems.",
-  impact:"BIGGEST IMPACT. Choose whatever combination produces the greatest overall improvement in the available time."
+  quick:`QUICK WIN. The person needs momentum and a visible "I did something" moment.
+  - Pick the 2-5 smallest steps with the most obvious visual change: the thing you see first when you walk in.
+  - Each step should be finishable in a few minutes with zero decisions (trash out, one surface cleared, blanket pulled up).
+  - Front-load the fastest, most satisfying step as step 1.
+  - Skip anything slow, fiddly or hidden, even if it matters.
+  - Example step: "Clear the coffee table: trash in the bag, cups to the sink, everything else in one basket."`,
+  declutter:`DECLUTTER. The goal is FEWER THINGS out: get stuff off floors and surfaces and out of the room.
+  - Steps are about removing: trash and recycling out, dishes to the kitchen, laundry to the hamper, things that belong in other rooms bagged or basketed and carried out.
+  - Include one quick "discard" pass where it's obvious (packaging, junk mail, broken or empty items). No sentimental decisions.
+  - Measure success by clear floor and clear surface area.
+  - Don't spend time arranging or grouping what stays.
+  - Example step: "Floor sweep: walk the room once with a trash bag and a laundry basket. Trash in the bag, clothes in the basket, carry both out."`,
+  organize:`ORGANIZATION. The goal is things IN THEIR PLACE and grouped, not just gone.
+  - Steps are about returning items to their homes and grouping like with like: shoes together at the door, toys back in their bin, books on the shelf, cords coiled, papers in one stack.
+  - Create simple zones where there clearly are none (one spot for bags, one for keys and mail).
+  - Name WHERE each group of things goes, based on storage you can see in the photos.
+  - Sorting into a few broad groups IS the job here, but no drawer organizing, micro-sorting, labeling or buying storage.
+  - Example step: "Group the toys: stuffed animals on the bed, building toys in the white bin, books on the bottom shelf."`,
+  impact:`BIGGEST IMPACT. The goal is the biggest overall difference in how the space looks and works when time runs out.
+  - Go after the largest, most visible problem areas first (floors and main surfaces), even if those steps are longer.
+  - Restore the main function of each room shown (can walk through, sit, sleep, cook).
+  - Mix removing and putting away as needed. Skip small details entirely.
+  - Example step: "Clear the whole bedroom floor: dirty clothes to the hamper, trash to the bag, everything else on the bed to put away next."`
 };
 const ENERGY_TEXT={
   1:"BARE MINIMUM. Fewer tasks (about 2-4), containment over sorting: trash sweep, gather dishes, laundry into one basket. Minimal room switching. Nothing that needs decisions.",
@@ -445,7 +464,7 @@ function loadImg(url){return new Promise(r=>{const i=new Image();i.onload=()=>r(
 
 /* ---------- AI plan ---------- */
 function goalLine(){
-  if(S.goal==="custom"){const g=S.customGoal.trim();return g?`THE USER'S OWN GOAL (main prioritization target): "${g}"`:GOAL_TEXT.impact}
+  if(S.goal==="custom"){const g=S.customGoal.trim();return g?`THE PERSON'S OWN GOAL, in their words: "${g}". Every step must move toward exactly this. Leave out anything that doesn't serve it, even if it's messy. If the goal names a room or an event, focus there.`:GOAL_TEXT.impact}
   return GOAL_TEXT[S.goal];
 }
 function buildPrompt(collage){
@@ -461,15 +480,15 @@ CONTEXT: ${S.context.trim()||"none given"}
 
 Look across ALL photos together, not one at a time. For each area, silently judge severity, urgency, effort, visible payoff, what function is lost, and likely time needed. Look for dishes, trash, laundry, clutter, crowded surfaces, items on the floor, blocked walkways, food or perishables, spills, obvious kid or pet hazards, unusable surfaces, and unusually high-impact quick wins.
 
-PRIORITY ORDER:
-1. Immediate safety: spills, food or perishables, pet or kid hazards, blocked walkways.
-2. Restore useful function: clear the sink, make a counter usable, expose the bed, clear a walkway, restore seating, make the entry usable.
-3. Match the goal above.
+HOW TO CHOOSE STEPS:
+1. Safety first, but only if you actually see it: spills, food or perishables left out, pet or kid hazards, blocked walkways. Make it one short step, then move on.
+2. THE GOAL DECIDES EVERYTHING ELSE. Which areas you pick, which steps, what order, and how each step is done must follow the GOAL section above. Two different goals on the same photos should produce clearly different plans.
+3. When the goal leaves room, restore basic function (usable sink, counter, bed, walkway, seating, entry).
 
 RULES:
 - Reduce decisions. Concrete starting actions ("Trash goes in the trash. Everything that belongs elsewhere goes into one basket."), never vague tasks like "clean kitchen".
 - Finish a useful cluster in one area before switching rooms. Don't bounce between rooms.
-- Prefer containment and visible wins over sorting. No perfection cleaning, drawer organizing, micro-sorting or sentimental decisions.
+- No perfection cleaning, drawer organizing, micro-sorting or sentimental decisions. Use containment (one basket) when a goal other than Organization would otherwise require sorting.
 - Usually 3-6 tasks. Never a giant list.
 - Task minutes must add up to AT MOST ${S.time} and should use most of it (at least ${Math.max(1,Math.round(S.time*0.8))}).
 - It's fine to leave an area out entirely if it isn't worth the time today.
@@ -481,8 +500,8 @@ Reply with ONLY a JSON object in this exact shape:
 {"areas":[{"photo":1,"name":"Kitchen","saw":"one short neutral sentence on what matters in this photo","caution":"visible safety note, or empty string"}],
  "planTitle":"Your ${S.time}-minute reset",
  "startLine":"Start in the kitchen.",
- "strategy":"one or two sentences on why this order",
- "tasks":[{"photo":1,"area":"Kitchen","title":"Contain the dishes","action":"what exactly to do, 1-2 sentences","minutes":7,"why":"short reason, or empty string"}],
+ "strategy":"one or two sentences that say how this plan serves the GOAL and why this order",
+ "tasks":[{"photo":1,"area":"Kitchen","title":"Contain the dishes","action":"what exactly to do, 1-2 sentences","minutes":7,"why":"short reason tied to the goal"}],
  "stopRule":"When your ${S.time} minutes are up, stop. A partially reset house is still a reset.",
  "ifFinishEarly":"ONE small optional action, not a new project"}`;
 }
@@ -531,7 +550,7 @@ function makePlan(p){
     stopRule:String(p.stopRule||`When your ${S.time} minutes are up, stop. A partially reset house is still a reset.`),
     extra:String(p.extra||""),tasks,saw:p.saw||[],startedAt:null,before:[],after:[],
     goal:S.goal==="custom"?(S.customGoal.trim()||"My own goal"):(GOALS.find(g=>g[0]===S.goal)||[])[1]||"",
-    energy:(ENERGY.find(e=>e[0]===S.energy)||[])[1]||""
+    energy:(ENERGY.find(e=>e[0]===S.energy)||[])[1]||"",goalText:goalLine(),energyText:ENERGY_TEXT[S.energy]
   };
 }
 
@@ -605,7 +624,8 @@ ${areas||"unknown"}
 Steps they ALREADY DID (assume these are done, don't repeat them):
 ${p.tasks.map(t=>"- "+t.area+": "+t.title+" ("+t.action+")").join("\n")}
 
-ENERGY: ${p.energy||"Functional"}. GOAL: ${p.goal||"Biggest impact"}.${calibrationText()}
+ENERGY: ${p.energyText||p.energy||"Functional"}
+GOAL (follow it closely): ${p.goalText||p.goal||"Biggest impact"}${calibrationText()}
 
 RULES: 1-3 steps. Minutes must add up to AT MOST ${mins} and should use most of it. Stay in areas they already worked in, next-highest payoff first. Concrete actions, containment over sorting, no perfection cleaning, neutral tone.
 
@@ -714,7 +734,7 @@ function setupHTML(){
 }
 function planHTML(){
   const p=S.plan;
-  return `<section class="planhero"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div class="eyebrow">Your plan · ${fmtTime(p.minutes)}</div><button class="restart" data-act="new">↺ Start over</button></div>
+  return `<section class="planhero"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div class="eyebrow">${esc(p.goal||"Your plan")} · ${fmtTime(p.minutes)}</div><button class="restart" data-act="new">↺ Start over</button></div>
     <h1>${esc(p.title)}</h1>${p.startLine||p.strategy?`<p>${esc([p.startLine,p.strategy].filter(Boolean).join(" "))}</p>`:""}
     <div id="clock">${clockHTML()}</div></section>
   <div class="prog" id="prog"></div>
