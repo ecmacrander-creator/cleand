@@ -484,7 +484,7 @@ function errCopy(e){const c=e&&e.code;return({
   too_large:"Too many photos at once. Remove one or two and try again.",
   offline:"No internet connection. Try again when you're back online.",
   no_model:"Gemini couldn't find a model to use. Tell Claude so it can update cleand."
-})[c]||"Couldn't reach Gemini. Try again."}
+})[c]||("Couldn't reach Gemini. Try again."+(e&&e.message?" Details: "+String(e.message).slice(0,220):""))}
 
 async function buildAIPlan(){
   if(!S.areas.length){S.err="Add at least one photo first.";return render()}
@@ -761,10 +761,11 @@ async function geminiJSON(prompt,opts={}){
   const body=JSON.stringify({contents:[{role:"user",parts}],generationConfig:{responseMimeType:"application/json",temperature:0.4}});
   let saved="";try{saved=localStorage.getItem("cleand_model")||""}catch(e){}
   const list=[...new Set([saved,...MODELS].filter(Boolean))];
+  let last=null;
   for(const m of list){
     let r;
     try{r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`,{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":key},body,signal:opts.signal})}
-    catch(e){if(e&&e.name==="AbortError")throw {code:"cancelled"};throw {code:navigator.onLine===false?"offline":"upstream_error"}}
+    catch(e){if(e&&e.name==="AbortError")throw {code:"cancelled"};if(navigator.onLine===false)throw {code:"offline"};last={code:"upstream_error",message:"Network error ("+(e&&e.message||e)+") on "+m};continue}
     if(r.status===404)continue;
     let j=null;try{j=await r.json()}catch(e){}
     const msg=(j&&j.error&&j.error.message)||"";
@@ -772,7 +773,8 @@ async function geminiJSON(prompt,opts={}){
     if(r.status===400&&/api key/i.test(msg)||r.status===401||r.status===403)throw {code:"bad_key"};
     if(r.status===429)throw {code:"rate_limited"};
     if(r.status===413)throw {code:"too_large"};
-    if(!r.ok)throw {code:"upstream_error",message:msg};
+    if(r.status>=500){last={code:"upstream_error",message:r.status+" "+msg+" ("+m+")"};continue}
+    if(!r.ok)throw {code:"upstream_error",message:r.status+" "+msg+" ("+m+")"};
     try{localStorage.setItem("cleand_model",m)}catch(e){}
     const c=j&&j.candidates&&j.candidates[0];
     if(!c||(j.promptFeedback&&j.promptFeedback.blockReason)||c.finishReason==="SAFETY")throw {code:"refused"};
@@ -780,7 +782,7 @@ async function geminiJSON(prompt,opts={}){
     if(!text.trim())throw {code:"invalid_json"};
     return parseJSONLoose(text);
   }
-  throw {code:"no_model"};
+  throw last||{code:"no_model"};
 }
 
 /* ---------- on-device storage (IndexedDB) ---------- */
