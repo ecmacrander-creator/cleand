@@ -526,13 +526,15 @@ function errCopy(e){const c=e&&e.code;return({
   invalid_json:"The plan came back scrambled. Tap Build my plan again.",
   too_large:"Too many photos at once. Remove one or two and try again.",
   offline:"No internet connection. Try again when you're back online.",
+  timeout:"Gemini took too long, so cleand stopped waiting. Tap Build my plan to try again, and keep cleand open on screen while it works.",
   no_model:"Gemini couldn't find a model to use. Tell Claude so it can update cleand."
 })[c]||("Couldn't reach Gemini. Try again."+(e&&e.message?" Details: "+String(e.message).slice(0,220):""))}
 
 async function buildAIPlan(){
   if(!S.areas.length){S.err="Add at least one photo first.";return render()}
   if(!getKey()){openSettings();return}
-  S.err=null;S.busy=true;S.ctl=new AbortController();render();window.scrollTo({top:0,behavior:"smooth"});
+  S.err=null;S.busy=true;S.stage="Getting started…";S.ctl=new AbortController();render();window.scrollTo({top:0,behavior:"smooth"});
+  const t0=Date.now(),busyTick=setInterval(()=>{const el=document.getElementById("elapsed");if(el)el.textContent=Math.round((Date.now()-t0)/1000)+"s"},1000);
   try{
     const {blobs,collage}=await imagesForCall();
     const res=await S.sample.json(buildPrompt(collage),{images:blobs,signal:S.ctl.signal,cache:false});
@@ -541,7 +543,7 @@ async function buildAIPlan(){
     if(e&&e.code==="cancelled"){}
     else if(e&&e.code==="bad_key"){S.err=errCopy(e);setKey("");openSettings()}
     else{console.error(e);S.err=errCopy(e)}
-  }finally{S.busy=false;S.ctl=null;render();window.scrollTo({top:0})}
+  }finally{clearInterval(busyTick);S.busy=false;S.ctl=null;render();window.scrollTo({top:0})}
 }
 function applyResult(res){
     if(!res||!Array.isArray(res.tasks)||!res.tasks.length)throw {code:"invalid_json"};
@@ -698,7 +700,7 @@ function render(){
 }
 function workingHTML(){
   return `<div class="sec working" style="margin-top:16px"><div class="spinner" aria-hidden="true"></div><h2>Looking at your house…</h2>
-  <p style="margin:0;max-width:34ch">Comparing all ${S.areas.length} area${S.areas.length>1?"s":""} for safety, function and payoff in ${S.time} minutes. This usually takes under a minute.</p>
+  <p style="margin:0;max-width:34ch"><b id="stage">${esc(S.stage||"Getting started…")}</b><br><span id="elapsed">0s</span> · usually under a minute. Keep cleand open on screen.</p>
   <div class="strip">${S.areas.map(a=>`<img src="${a.url}" alt="">`).join("")}</div>
   <button class="btn" data-act="stop">Stop</button></div>`;
 }
@@ -908,20 +910,41 @@ function parseJSONLoose(t){
   if(a>=0&&b>a){try{return JSON.parse(body.slice(a,b+1))}catch(e){}}
   throw {code:"invalid_json"};
 }
+/* Photos for AI: smaller is much faster to upload and Gemini doesn't need more detail. */
+function shrinkForAI(blob,max=1024,q=.72){
+  return new Promise(res=>{const u=URL.createObjectURL(blob),im=new Image();
+    im.onload=()=>{try{const sc=Math.min(1,max/Math.max(im.naturalWidth,im.naturalHeight));const w=Math.max(1,Math.round(im.naturalWidth*sc)),h=Math.max(1,Math.round(im.naturalHeight*sc));
+      const c=document.createElement("canvas");c.width=w;c.height=h;const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,w,h);x.drawImage(im,0,0,w,h);
+      c.toBlob(b=>{URL.revokeObjectURL(u);res(b&&b.size>500?b:blob)},"image/jpeg",q)}catch(e){URL.revokeObjectURL(u);res(blob)}};
+    im.onerror=()=>{URL.revokeObjectURL(u);res(blob)};im.src=u});
+}
+const AI_TIMEOUT_MS=100000;
 async function geminiJSON(prompt,opts={}){
   const key=getKey();if(!key)throw {code:"bad_key"};
-  const parts=[{text:prompt}];
-  for(const b of (opts.images||[]))parts.push({inline_data:{mime_type:b.type&&/^image\//.test(b.type)?b.type:"image/jpeg",data:await toB64(b)}});
+  const stage=t=>{S.stage=t;const el=document.getElementById("stage");if(el)el.textContent=t};
+  const parts=[{text:prompt}],imgs=opts.images||[];
+  if(imgs.length)stage("Shrinking photos…");
+  for(const b of imgs){const sb=await shrinkForAI(b);parts.push({inline_data:{mime_type:"image/jpeg",data:await toB64(sb)}})}
+  if(opts.signal&&opts.signal.aborted)throw {code:"cancelled"};
+  stage(imgs.length?`Gemini is looking at ${imgs.length} photo${imgs.length>1?"s":""}…`:"Asking Gemini…");
+  const ctl=new AbortController();let timedOut=false;
+  const onAbort=()=>ctl.abort();if(opts.signal)opts.signal.addEventListener("abort",onAbort);
+  const timer=setTimeout(()=>{timedOut=true;ctl.abort()},AI_TIMEOUT_MS);
+  try{return await geminiCall(key,parts,{...opts,signal:ctl.signal},stage)}
+  catch(e){if(timedOut)throw {code:"timeout"};throw e}
+  finally{clearTimeout(timer);if(opts.signal)opts.signal.removeEventListener("abort",onAbort)}
+}
+async function geminiCall(key,parts,opts,stage){
   const body=JSON.stringify({contents:[{role:"user",parts}],generationConfig:{responseMimeType:"application/json",temperature:0.4}});
   let saved="";try{saved=localStorage.getItem("cleand_model")||""}catch(e){}
   const list=[...new Set([saved,...MODELS].filter(Boolean))];
   let last=null;
   for(const m of list){
     let r;
-    try{r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`,{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":key},body,signal:opts.signal})}
+    try{r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`,{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":key},body,signal:opts.signal});stage("Gemini is building your plan…")}
     catch(e){if(e&&e.name==="AbortError")throw {code:"cancelled"};if(navigator.onLine===false)throw {code:"offline"};last={code:"upstream_error",message:"Network error ("+(e&&e.message||e)+") on "+m};continue}
     if(r.status===404)continue;
-    let j=null;try{j=await r.json()}catch(e){}
+    let j=null;try{j=await r.json()}catch(e){if(e&&e.name==="AbortError")throw {code:"cancelled"}}
     const msg=(j&&j.error&&j.error.message)||"";
     if(r.status===400&&/not found|not supported|unknown model/i.test(msg))continue;
     if(r.status===400&&/api key/i.test(msg)||r.status===401||r.status===403)throw {code:"bad_key"};
