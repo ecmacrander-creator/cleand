@@ -645,6 +645,7 @@ Reply with ONLY a JSON object in this exact shape:
 function errCopy(e){const c=e&&e.code;return({
   bad_key:"That Gemini key didn't work. Paste it again in Settings.",
   rate_limited:"Gemini's free limit is used up for now. Wait a minute and tap Build my plan again.",
+  busy:"Gemini's free servers are swamped right now (Google's side, not you). Give it a few minutes and tap Build my plan again.",
   refused:"Gemini wouldn't plan from these photos. Try removing one and running it again.",
   invalid_json:"The plan came back scrambled. Tap Build my plan again.",
   too_large:"Too many photos at once. Remove one or two and try again.",
@@ -1150,7 +1151,7 @@ async function saveKey(){
 $("#sheet").addEventListener("click",e=>{if(e.target.id==="sheet")closeSettings()});
 
 /* ---------- Gemini (stands in for the photo-reading call) ---------- */
-const MODELS=["gemini-3.5-flash","gemini-3.8-flash","gemini-flash-latest","gemini-2.5-flash"];
+const MODELS=["gemini-3.5-flash","gemini-3.8-flash","gemini-flash-latest","gemini-2.5-flash","gemini-3.5-flash-lite","gemini-3.1-flash-lite","gemini-2.5-flash-lite"];
 const toB64=b=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(",")[1]);r.onerror=rej;r.readAsDataURL(b)});
 function parseJSONLoose(t){
   try{return JSON.parse(t)}catch(e){}
@@ -1186,19 +1187,24 @@ async function geminiCall(key,parts,opts,stage){
   const body=JSON.stringify({contents:[{role:"user",parts}],generationConfig:{responseMimeType:"application/json",temperature:0.4}});
   let saved="";try{saved=localStorage.getItem("cleand_model")||""}catch(e){}
   const list=[...new Set([saved,...MODELS].filter(Boolean))];
-  let last=null;
+  let last=null;const dead=new Set();
+  // Busy (5xx) or rate-limited models get a second pass after a short pause
+  for(let round=0;round<2;round++){
+  if(round){stage("Gemini is busy. Trying again…");await new Promise((res,rej)=>{const t=setTimeout(res,4000);opts.signal&&opts.signal.addEventListener("abort",()=>{clearTimeout(t);rej({code:"cancelled"})})})}
+  let tried=0;
   for(const m of list){
+    if(dead.has(m))continue;tried++;
     let r;
     try{r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`,{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":key},body,signal:opts.signal});stage("Gemini is building your plan…")}
     catch(e){if(e&&e.name==="AbortError")throw {code:"cancelled"};if(navigator.onLine===false)throw {code:"offline"};last={code:"upstream_error",message:"Network error ("+(e&&e.message||e)+") on "+m};continue}
-    if(r.status===404)continue;
+    if(r.status===404){dead.add(m);continue}
     let j=null;try{j=await r.json()}catch(e){if(e&&e.name==="AbortError")throw {code:"cancelled"}}
     const msg=(j&&j.error&&j.error.message)||"";
-    if(r.status===400&&/not found|not supported|unknown model/i.test(msg))continue;
+    if(r.status===400&&/not found|not supported|unknown model/i.test(msg)){dead.add(m);continue}
     if(r.status===400&&/api key/i.test(msg)||r.status===401||r.status===403)throw {code:"bad_key"};
-    if(r.status===429)throw {code:"rate_limited"};
+    if(r.status===429){last={code:"rate_limited"};continue}
     if(r.status===413)throw {code:"too_large"};
-    if(r.status>=500){last={code:"upstream_error",message:r.status+" "+msg+" ("+m+")"};continue}
+    if(r.status>=500){last={code:"busy",message:r.status+" "+msg+" ("+m+")"};continue}
     if(!r.ok)throw {code:"upstream_error",message:r.status+" "+msg+" ("+m+")"};
     try{localStorage.setItem("cleand_model",m)}catch(e){}
     const c=j&&j.candidates&&j.candidates[0];
@@ -1206,6 +1212,8 @@ async function geminiCall(key,parts,opts,stage){
     const text=((c.content&&c.content.parts)||[]).map(p=>p.text||"").join("");
     if(!text.trim())throw {code:"invalid_json"};
     return parseJSONLoose(text);
+  }
+  if(!tried)break;
   }
   throw last||{code:"no_model"};
 }
