@@ -228,6 +228,8 @@ textarea{resize:vertical;min-height:74px}
 .win h3{font-size:19px;font-weight:700;margin-top:4px}
 .slidebtns{position:absolute;right:8px;bottom:8px;display:flex;gap:6px}
 .slidebtns button{width:38px;height:38px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;display:grid;place-items:center;padding:0}
+.bahead .rn select{appearance:none;-webkit-appearance:none;border:0;background:none;font:inherit;font-weight:700;font-size:15px;color:var(--ink);padding:0 16px 0 0;background-image:linear-gradient(45deg,transparent 50%,var(--ink-3) 50%),linear-gradient(135deg,var(--ink-3) 50%,transparent 50%);background-position:right 4px center,right 0 center;background-size:4px 4px;background-repeat:no-repeat}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .bahead .sbs{border:0;background:none;color:var(--accent);font-weight:700;font-size:12.5px;padding:0}
 .ba .swipe{text-align:center;font-size:12px;color:var(--accent);font-weight:700;margin-top:4px}
 .unm{margin-top:14px;border-top:1px dashed var(--line);padding-top:10px}
@@ -598,7 +600,7 @@ RULES:
 - It's fine to leave an area out entirely if it isn't worth the time today.
 - Tone: neutral, practical, never shaming. Never call anything gross, disgusting or embarrassing. Words like crowded, cluttered, blocked, visually busy are fine.
 - Don't invent exact item counts you can't see.
-- Area names: short and plain, like "Kitchen", "Living room", "Entryway", "Bedroom", "Desk". If two photos show the same room, use the same name.
+- Area names: these are the rooms in this house, with the names the family uses: ${JSON.stringify(getRooms())}. Name each photo with EXACTLY one of these when it plausibly matches (a home office with a desk is "${getRooms().find(r=>/office/i.test(r))||"Office"}", the main bedroom is "${getRooms().find(r=>/^master$/i.test(r))||"Bedroom"}", a kids' room is "${getRooms().find(r=>/boy|kid/i.test(r))||"Kids' room"}"). Only if none fits, use a short plain name like "Kitchen" or "Garage". If two photos show the same room, use the same name.
 
 Reply with ONLY a JSON object in this exact shape:
 {"areas":[{"photo":1,"name":"Kitchen","saw":"one short neutral sentence on what matters in this photo","caution":"visible safety note, or empty string"}],
@@ -906,7 +908,8 @@ function baHTML(w,b,a){
   const slide=(x,lab)=>`<figure><button class="open" data-act="lb" data-src="${blobUrl(x.id)}" data-cap="${esc(lab+" · "+name)}"><img src="${blobUrl(x.id)}" alt="${esc(lab+" "+name)}" loading="lazy"></button><figcaption class="${lab==="After"?"af":""}">${lab}</figcaption>
     <div class="slidebtns"><button data-act="savephoto" data-id="${w.id}" data-v="${x.id}" data-cap="${esc(name+" "+lab)}" aria-label="Save ${lab} photo">${icon.save}</button>${lab==="After"?`<button data-act="rmafter" data-id="${w.id}" data-v="${x.id}" aria-label="Remove after photo">${icon.trash}</button>`:""}</div></figure>`;
   const slides=[slide(b,"Before"),a?slide(a,"After"):(S.assets?`<figure class="noafter"><label><span>${icon.cam}</span><b>Add the after</b><small>for ${esc(name)}</small><input type="file" accept="image/*" data-after="${w.id}" data-photo="${b.photo}"></label></figure>`:"")].filter(Boolean);
-  return `<div class="ba"><div class="bahead"><span>${esc(name)}</span>${a?`<button class="sbs" data-act="sbs" data-id="${w.id}" data-v="${b.photo}">Save side-by-side</button>`:""}</div><div class="baslides">${slides.join("")}</div>${slides.length>1?`<div class="badots"><i class="on"></i><i></i></div><div class="swipe">${a?"Swipe for after →":"Swipe to add the after →"}</div>`:""}</div>`;
+  const rooms=getRooms(),opts=[...new Set([name,...rooms])];
+  return `<div class="ba"><div class="bahead"><label class="rn"><span class="sr">Room name</span><select data-rename="${b.photo}" data-id="${w.id}">${opts.map(r=>`<option ${r===name?"selected":""}>${esc(r)}</option>`).join("")}</select></label>${a?`<button class="sbs" data-act="sbs" data-id="${w.id}" data-v="${b.photo}">Save side-by-side</button>`:""}</div><div class="baslides">${slides.join("")}</div>${slides.length>1?`<div class="badots"><i class="on"></i><i></i></div><div class="swipe">${a?"Swipe for after →":"Swipe to add the after →"}</div>`:""}</div>`;
 }
 function unmatchedHTML(w,pf){
   if(!pf.unmatched.length)return "";
@@ -967,6 +970,7 @@ document.addEventListener("click",e=>{
   else if(a==="settings")openSettings();
   else if(a==="closesheet")closeSettings();
   else if(a==="savekey")saveKey();
+  else if(a==="saverooms"){const r=[...new Set(($("#roomsin").value||"").split(/\n+/).map(x=>x.trim()).filter(Boolean))].slice(0,40);if(r.length){setRooms(r);toast("Rooms saved");$("#sheet").hidden=true}}
   else if(a==="forgetkey"){setKey("");closeSettings();toast("Key removed from this phone")}
   else if(a==="stop"){S.ctl&&S.ctl.abort()}
   else if(a==="clock")startClock();
@@ -1001,6 +1005,7 @@ document.addEventListener("change",e=>{
   const t=e.target;
   if(t.id==="camin"||t.id==="libin")addFiles(t.files,t);
   else if(t.dataset.check)toggleTask(t.dataset.check,t.checked);
+  else if(t.dataset.rename)renameArea(t.dataset.id,+t.dataset.rename,t.value);
   else if(t.dataset.after)addAfters(t.files,t,t.dataset.after,t.dataset.photo);
 });
 document.addEventListener("scroll",e=>{const el=e.target;if(!el.classList||!el.classList.contains("baslides"))return;
@@ -1012,6 +1017,15 @@ const _render=render;render=function(){_render();if(S.view==="plan")renderPlanPa
 
 /* ---------- key + settings ---------- */
 function getKey(){try{return localStorage.getItem("cleand_gemini_key")||""}catch(e){return ""}}
+const DEFAULT_ROOMS=["Front room","Emily office","Master","Master bath","Guest bath","Living room","Laundry room","Entryway","Boys room"];
+function getRooms(){try{const r=JSON.parse(localStorage.getItem("cleand_rooms")||"null");if(Array.isArray(r)&&r.length)return r}catch(e){}return DEFAULT_ROOMS.slice()}
+function setRooms(r){try{localStorage.setItem("cleand_rooms",JSON.stringify(r))}catch(e){}}
+async function renameArea(planId,photo,name){
+  const {isCur,t}=winTarget(planId);if(!t)return;
+  const b=(t.before||[]).find(x=>x.photo===photo);if(!b)return;const old=b.name;b.name=name;
+  (t.saw||[]).forEach(x=>{if(x.photo===photo)x.name=name});(t.tasks||[]).forEach(x=>{if(x.photo===photo||(!x.photo&&x.area===old))x.area=name});
+  await saveTarget(planId,isCur,t);render();toast("Renamed to "+name);
+}
 function setKey(k){try{k?localStorage.setItem("cleand_gemini_key",k):localStorage.removeItem("cleand_gemini_key")}catch(e){}}
 let sheetErr="",sheetBusy=false;
 function openSettings(){sheetErr="";renderSheet();$("#sheet").hidden=false}
@@ -1028,6 +1042,10 @@ function renderSheet(){
   ${sheetErr?`<div class="note err">${esc(sheetErr)}</div>`:""}
   <button class="btn primary big" data-act="savekey" style="margin-top:12px" ${sheetBusy?"disabled":""}>${sheetBusy?"Checking…":"Save"}</button>
   ${k?`<button class="btn ghost danger" data-act="forgetkey" style="margin-top:8px;width:100%">Remove key from this phone</button>`:""}
+  <h2 style="margin-top:22px;font-size:20px">Your rooms</h2>
+  <p class="hint" style="margin-top:4px">cleand names each photo with one of these. One room per line.</p>
+  <textarea id="roomsin" class="inp" rows="8" style="margin-top:8px;min-height:180px">${esc(getRooms().join("\n"))}</textarea>
+  <button class="btn big" data-act="saverooms" style="margin-top:10px">Save rooms</button>
   <p class="hint" style="margin-top:14px">On Google's free tier, Google may use what you send to improve its products. Your photos and Wins are stored only on this phone.</p></div>`;
 }
 async function saveKey(){
