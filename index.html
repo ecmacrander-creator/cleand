@@ -226,6 +226,31 @@ textarea{resize:vertical;min-height:74px}
 .win{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-top:12px;box-shadow:var(--shadow)}
 .winmeta{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:13px;color:var(--ink-3);font-family:var(--mono)}
 .win h3{font-size:19px;font-weight:700;margin-top:4px}
+.bas{display:flex;flex-direction:column;gap:14px;margin-top:12px}
+.ba{position:relative}
+.bahead{display:flex;justify-content:space-between;align-items:baseline;font-weight:700;font-size:14px;margin-bottom:6px}
+.bahead .swipe{font-size:12px;color:var(--accent);font-weight:700}
+.baslides{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;border-radius:14px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.baslides::-webkit-scrollbar{display:none}
+.baslides figure{flex:0 0 100%;scroll-snap-align:center;margin:0;position:relative;aspect-ratio:4/3;background:var(--surface-2)}
+.baslides figure .open{display:block;width:100%;height:100%;cursor:zoom-in}
+.baslides img{width:100%;height:100%;object-fit:cover;display:block}
+.baslides figcaption{position:absolute;left:10px;top:10px;background:rgba(0,0,0,.62);color:#fff;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:3px 10px}
+.baslides figcaption.af{background:var(--accent);color:var(--accent-ink)}
+.noafter label{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;height:100%;color:var(--ink-2);cursor:pointer;border:2px dashed var(--line);border-radius:14px}
+.noafter label span{color:var(--accent)}
+.noafter input{position:absolute;inset:0;opacity:0;font-size:0}
+.badots{display:flex;justify-content:center;gap:6px;margin-top:8px}
+.badots i{width:7px;height:7px;border-radius:50%;background:var(--line)}
+.badots i.on{background:var(--accent)}
+.areasnap{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:12px}
+.snap{position:relative;display:flex;flex-direction:column;gap:3px;border:1px solid var(--line);border-radius:14px;padding:8px;cursor:pointer;background:var(--surface)}
+.snap.has{border-color:var(--accent)}
+.snap .pics{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.snap .pics img,.snap .ph{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;background:var(--surface-2);display:grid;place-items:center;color:var(--accent)}
+.snap .nm{font-weight:700;font-size:14px;margin-top:3px}
+.snap small{font-size:12px;color:var(--accent);font-weight:700}
+.snap input{position:absolute;inset:0;opacity:0;font-size:0}
 .pair{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
 .pair .col .k{font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;color:var(--ink-3);margin-bottom:6px}
 .pair .col.a .k{color:var(--accent)}
@@ -378,7 +403,16 @@ async function saveBefores(plan,areas){
   }
 }
 // After photos: works for the current plan or any past reset in Wins.
-async function addAfters(list,input,planId){
+/* Pair each after photo with its before photo (by photo number). */
+function pairsFor(w,after){
+  const before=(w.before||[]).slice().sort((a,b)=>a.photo-b.photo),used=new Set(),pairs=before.map(b=>({b,a:null}));
+  for(const p of pairs){const m=after.filter(x=>x.photo===p.b.photo);if(m.length){p.a=m[m.length-1];m.forEach(x=>used.add(x.id))}}
+  for(const x of after){if(used.has(x.id)||x.photo)continue;const open=pairs.find(p=>!p.a);if(open){open.a=x;used.add(x.id)}}
+  after.filter(x=>!used.has(x.id)&&!pairs.some(p=>p.a===x)).forEach(x=>pairs.push({b:null,a:x}));
+  return pairs;
+}
+function nextOpenPhoto(t){const pairs=pairsFor(t,t.after||[]);const o=pairs.find(p=>p.b&&!p.a);return o?o.b.photo:null}
+async function addAfters(list,input,planId,photoNo){
   const files=[...(list||[])];if(input)input.value="";
   if(!files.length)return;
   if(!S.assets||!S.db){toast("Saving photos isn't available in this browser.");return}
@@ -390,7 +424,8 @@ async function addAfters(list,input,planId){
   for(const f of files.slice(0,10)){
     try{
       const blob=await prepareImage(f);const id=await uploadBlob(blob);
-      target.after.push({id,at:new Date().toISOString()});
+      const ph=photoNo?+photoNo:nextOpenPhoto(target);
+      target.after.push({id,at:new Date().toISOString(),photo:ph||null});
       if(isCur)savePlan();else await S.db.doc("resets/"+planId).set(target);
     }catch(e){console.warn(e);toast(uploadErr(e))}
     S.uploading[planId]--;render();
@@ -607,10 +642,38 @@ function toggleTask(id,on){
   savePlan();renderPlanParts();
 }
 async function saveNow(p){if(!S.db||!p)return;clearTimeout(saveT);try{await S.db.doc("resets/"+p.id).set(JSON.parse(JSON.stringify(p)))}catch(e){console.warn(e)}}
+const DONE_MSGS=[
+  "Look at you, adulting on purpose.",
+  "The house didn't stand a chance.",
+  "That's not a mess anymore. That's a before photo.",
+  "Chaos: 0. You: 1.",
+  "Future you just sent a thank-you note.",
+  "Somewhere, a laundry basket is very proud of you.",
+  "Tidy enough to answer the door without panicking.",
+  "You did the thing. The thing is done. Sit down.",
+  "Executive function: outsourced. Credit: entirely yours.",
+  "Not perfect. Better. That was the assignment.",
+  "The floor has been located. Scientists are thrilled.",
+  "Reset complete. Go do literally anything else.",
+  "Small steps, real difference. Nicely done.",
+  "Your house called. It feels seen.",
+  "Plot twist: you're the kind of person who finishes.",
+  "Dishes: contained. Dignity: restored.",
+  "You beat the clock and the clutter. Double win.",
+  "A partially reset house is still a reset, and this one's fully done."
+];
+const GOAL_MSGS={
+  "Prepare for maid":["Ermalinda gets to clean instead of excavate. Well done.","Ermalinda's going to wonder if she's at the right house.","Every minute you saved her is a minute of actual cleaning. Smart."],
+  "Declutter & donate":["Your donate bag has more direction in life than most of us.","Less stuff, more space, and someone else gets a treasure.","Lighter house, lighter brain."],
+  "Quick win":["Small win, big dopamine.","Fast, visible, done. Exactly the point."],
+  "Organization":["Everything has a home again. Look at that.","Like with like. Marie would nod politely."],
+  "Biggest impact":["Maximum difference, minimum drama.","Walk in the front door and just take that in."]
+};
+function doneMessage(p){const pool=[...(GOAL_MSGS[p.goal]||[]),...(GOAL_MSGS[p.goal]||[]),...DONE_MSGS];return pool[Math.floor(Math.random()*pool.length)]}
 function completeJob(){
   const p=S.plan;if(!p||!p.tasks.every(t=>t.done))return;
-  pauseClock(p);p.status="done";p.completedAt=new Date().toISOString();
-  savePlan();render();confetti();toast("Job complete. Nice work.");
+  pauseClock(p);p.status="done";p.completedAt=new Date().toISOString();p.doneMsg=doneMessage(p);
+  savePlan();render();confetti();toast(p.doneMsg);
   setTimeout(()=>{const a=$("#aftersec");a&&a.scrollIntoView({behavior:"smooth",block:"center"})},1400);
 }
 async function saveForLater(){
@@ -770,7 +833,10 @@ function afterHTML(p){
   const up=S.uploading[p.id]||0,list=p.after||[];
   return `<section class="sec after" id="aftersec"><h2>After photos</h2>
   <p class="hint" style="margin-top:4px">${S.assets?"Snap what you reset. It's saved to Wins next to the before shots, so you can admire it later.":"Photo saving isn't available in this browser."}</p>
-  ${list.length||up?`<div class="thumbs">${list.map((x,i)=>`<div class="th"><button class="open" data-act="lb" data-src="${blobUrl(x.id)}" data-cap="After ${i+1}"><img src="${blobUrl(x.id)}" alt="After photo ${i+1}"></button></div>`).join("")}${Array.from({length:up},()=>`<div class="th busy"><div class="spinner" style="width:26px;height:26px"></div></div>`).join("")}</div>`:""}
+  ${(p.before||[]).length&&S.assets?`<div class="areasnap">${pairsFor(p,list).filter(x=>x.b).map(({b,a})=>`<label class="snap ${a?"has":""}"><span class="pics"><img src="${blobUrl(b.id)}" alt="">${a?`<img src="${blobUrl(a.id)}" alt="">`:`<span class="ph">${icon.cam}</span>`}</span><span class="nm">${esc(b.name||"Area "+b.photo)}</span><small>${a?"Retake after":"Snap after"}</small><input type="file" accept="image/*" capture="environment" data-after="${p.id}" data-photo="${b.photo}"></label>`).join("")}</div>
+    ${up?`<p class="hint">Saving ${up} photo${up>1?"s":""}…</p>`:""}
+    <p class="hint" style="margin-top:10px">Or add several at once. cleand matches them to areas in order.</p>`
+  :list.length||up?`<div class="thumbs">${list.map((x,i)=>`<div class="th"><button class="open" data-act="lb" data-src="${blobUrl(x.id)}" data-cap="After ${i+1}"><img src="${blobUrl(x.id)}" alt="After photo ${i+1}"></button></div>`).join("")}${Array.from({length:up},()=>`<div class="th busy"><div class="spinner" style="width:26px;height:26px"></div></div>`).join("")}</div>`:""}
   ${S.assets?`<div class="pacts"><label class="pact main">${icon.cam}<b>Take after photo</b><small>Tap again for the next area</small><input type="file" accept="image/*" capture="environment" data-after="${p.id}"></label>
   <label class="pact">${icon.lib}<b>Choose photos</b><small>From your library</small><input type="file" accept="image/*" multiple data-after="${p.id}"></label></div>`:""}</section>`;
 }
@@ -778,6 +844,12 @@ const fmtDay=iso=>{const d=new Date(iso);if(isNaN(d))return"";const o={weekday:"
 function miniGrid(arr,label){
   if(!arr||!arr.length)return `<div class="mini"><span class="none">${label==="Before"?"No before photos saved":"None yet"}</span></div>`;
   return `<div class="mini">${arr.map((x,i)=>`<button data-act="lb" data-src="${blobUrl(x.id)}" data-cap="${esc(label+(x.name?" · "+x.name:" "+(i+1)))}" aria-label="${label} photo ${i+1}"><img src="${blobUrl(x.id)}" alt="" loading="lazy"></button>`).join("")}</div>`;
+}
+function baHTML(w,b,a){
+  const name=b?(b.name||"Area "+b.photo):"Extra after";
+  const slide=(x,lab)=>`<figure><button class="open" data-act="lb" data-src="${blobUrl(x.id)}" data-cap="${esc(lab+" · "+name)}"><img src="${blobUrl(x.id)}" alt="${esc(lab+" "+name)}" loading="lazy"></button><figcaption class="${lab==="After"?"af":""}">${lab}</figcaption></figure>`;
+  const slides=[b?slide(b,"Before"):"",a?slide(a,"After"):(b&&S.assets?`<figure class="noafter"><label><span>${icon.cam}</span><b>Add the after</b><small>for ${esc(name)}</small><input type="file" accept="image/*" data-after="${w.id}" data-photo="${b.photo}"></label></figure>`:"")].filter(Boolean);
+  return `<div class="ba"><div class="bahead"><span>${esc(name)}</span>${slides.length>1?`<span class="swipe">Swipe →</span>`:""}</div><div class="baslides">${slides.join("")}</div>${slides.length>1?`<div class="badots"><i class="on"></i><i></i></div>`:""}</div>`;
 }
 function winsHTML(){
   const head=`<div class="winshead"><h1>Wins</h1><p>Every reset, before and after.</p></div>`;
@@ -791,8 +863,8 @@ function winsHTML(){
     return `<article class="win"><div class="winmeta"><span>${fmtDay(w.createdAt)}</span><span>${fmtTime(w.minutes||0)}</span><span>${done}/${total} steps</span></div>
     <span class="pill ${isDone?"ok":"open"}">${isDone?"Complete ✓":isCur?"In progress":"Saved for later"}</span>
     <h3>${esc(w.title||"Reset")}</h3>${w.goal||w.energy?`<div class="hint" style="margin-top:2px">${esc([w.goal,w.energy].filter(Boolean).join(" · "))}</div>`:""}
-    <div class="pair"><div class="col"><div class="k">Before</div>${miniGrid(w.before,"Before")}</div><div class="col a"><div class="k">After${up?` · saving ${up}…`:""}</div>${miniGrid(after,"After")}</div></div>
-    <div class="winacts">${S.assets?`<label class="pact">${icon.cam}<span>Add after</span><input type="file" accept="image/*" multiple data-after="${w.id}"></label>`:""}
+    <div class="bas">${pairsFor(w,after).map(({b,a})=>baHTML(w,b,a)).join("")||`<p class="hint">No photos saved for this reset.</p>`}</div>${up?`<p class="hint">Saving ${up} photo${up>1?"s":""}…</p>`:""}
+    <div class="winacts">${S.assets?`<label class="pact">${icon.lib}<span>Add afters</span><input type="file" accept="image/*" multiple data-after="${w.id}"></label>`:""}
     ${isCur?`<button class="btn" data-act="nav" data-v="plan">Open plan</button>`:!isDone?`<button class="btn primary" data-act="resume" data-id="${w.id}">Resume</button>`:""}
     <span class="spacer"></span>${S.confirmDel===w.id?`<button class="btn" data-act="delno">Keep</button><button class="btn danger solid" data-act="delwin" data-id="${w.id}">Delete for good</button>`:`<button class="btn ghost danger" data-act="delask" data-id="${w.id}">Remove</button>`}</div></article>`;
   }).join("")+`<div style="height:40px"></div>`;
@@ -814,7 +886,7 @@ function renderPlanParts(){
       ${S.fillErr?`<div class="note err">${esc(S.fillErr)}</div>`:""}</div>`:"";
   }
   const ja=$("#jobacts");
-  if(ja)ja.innerHTML=p.status==="done"?`<div class="donebanner"><b>Job complete 🎉</b>Snap an after photo below so you can admire it later.</div>`
+  if(ja)ja.innerHTML=p.status==="done"?`<div class="donebanner"><b>${esc(p.doneMsg||"Job complete 🎉")}</b>Now snap the after photos below so you can admire it later.</div>`
     :`<div class="jobacts"><button class="btn primary big" data-act="complete" ${all?"":"disabled"}>${all?"Complete job":`Complete job · ${total-done} step${total-done===1?"":"s"} left`}</button>
       <button class="btn big" data-act="later">Save for later</button></div>`;
   const ck=$("#clock");if(ck)ck.innerHTML=clockHTML();
@@ -862,8 +934,11 @@ document.addEventListener("change",e=>{
   const t=e.target;
   if(t.id==="camin"||t.id==="libin")addFiles(t.files,t);
   else if(t.dataset.check)toggleTask(t.dataset.check,t.checked);
-  else if(t.dataset.after)addAfters(t.files,t,t.dataset.after);
+  else if(t.dataset.after)addAfters(t.files,t,t.dataset.after,t.dataset.photo);
 });
+document.addEventListener("scroll",e=>{const el=e.target;if(!el.classList||!el.classList.contains("baslides"))return;
+  const i=Math.round(el.scrollLeft/Math.max(1,el.clientWidth)),dots=el.parentElement.querySelectorAll(".badots i");dots.forEach((d,k)=>d.classList.toggle("on",k===i));
+  const sw=el.parentElement.querySelector(".swipe");if(sw)sw.textContent=i?"← Before":"Swipe →"},true);
 $("#lb").addEventListener("click",e=>{if(e.target.id==="lb")$("#lb").hidden=true});
 document.addEventListener("keydown",e=>{if(e.key==="Escape")$("#lb").hidden=true});
 const _render=render;render=function(){_render();if(S.view==="plan")renderPlanParts()};
