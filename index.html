@@ -160,6 +160,19 @@ textarea{resize:vertical;min-height:74px}
 .jobacts .btn.primary:disabled{opacity:1;background:var(--surface-2);border-color:var(--surface-2);color:var(--ink-3)}
 .donebanner{margin-top:14px;background:var(--good-soft);color:var(--good);border-radius:var(--r);padding:14px 16px;font-size:15px}
 .donebanner.part{background:var(--warm);color:var(--warm-ink)}
+.cel h2{font-size:inherit}
+.celtop{display:flex;justify-content:space-between;align-items:center}
+.celbadge{font-family:var(--mono);font-size:12.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--good);background:var(--good-soft);border-radius:999px;padding:4px 10px}
+.cel.part .celbadge{color:var(--warm-ink);background:var(--warm)}
+.celhead{font-family:var(--display);font-size:clamp(26px,7vw,32px)!important;font-weight:800;letter-spacing:-.02em;line-height:1.12;margin-top:14px}
+.celnote{font-size:16.5px;color:var(--ink-2);margin:8px 0 0;line-height:1.45}
+.celstats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
+.celstats div{background:var(--surface-2);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column}
+.celstats b{font-family:var(--display);font-size:22px;font-weight:800;color:var(--accent)}
+.celstats span{font-size:12.5px;color:var(--ink-3);font-weight:600}
+.celrooms{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.celrooms span{background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:13px;border-radius:999px;padding:4px 10px}
+.cel .btn.big{display:flex;align-items:center;justify-content:center;gap:8px}
 .donebanner b{display:block;font-family:var(--display);font-size:19px;margin-bottom:2px}
 .bonus{font-size:11px;letter-spacing:.04em;background:#F2C14E;color:#3D2E05;border-radius:999px;padding:1px 8px}
 .pill{display:inline-block;margin-top:8px;font-size:12px;font-weight:700;border-radius:999px;padding:2px 10px}
@@ -584,6 +597,56 @@ async function saveSideBySide(planId,photo){
     await shareFiles([new File([blob],`cleand-${localDay(w.createdAt)}-${slug(name)}-before-after.png`,{type:"image/png"})]);
   }finally{S.sharing=false}
 }
+/* ---------- Image cards (shared) ---------- */
+const CARD={bg:"#EDF4F3",ink:"#10231F",ink3:"#687B7B",accent:"#087A7F",line:"#CFDEDB"};
+async function cardFonts(){try{await Promise.all(['800 64px "Bricolage Grotesque"','700 56px "Bricolage Grotesque"','700 26px Figtree','500 28px "DM Mono"','italic 500 30px Figtree'].map(f=>document.fonts.load(f)))}catch(e){}}
+async function cardImg(id){const b=S.assets&&await S.assets.get(id);if(!b)return null;const u=URL.createObjectURL(b);return await new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=u})}
+function cardRR(x,X,Y,w,h,r){x.beginPath();x.moveTo(X+r,Y);x.arcTo(X+w,Y,X+w,Y+h,r);x.arcTo(X+w,Y+h,X,Y+h,r);x.arcTo(X,Y+h,X,Y,r);x.arcTo(X,Y,X+w,Y,r);x.closePath()}
+function cardBrand(x,W,M,s,iso){
+  x.fillStyle=CARD.accent;cardRR(x,M,M,52*s,52*s,15*s);x.fill();
+  x.fillStyle="rgba(255,255,255,.9)";cardRR(x,M+11*s,M+15*s,30*s,5*s,2.5*s);x.fill();
+  x.fillStyle="rgba(255,255,255,.55)";x.beginPath();x.arc(M+13*s,M+17.5*s,5*s,0,Math.PI*2);x.fill();
+  x.textBaseline="middle";x.textAlign="left";x.fillStyle=CARD.ink;x.font=`800 ${40*s}px "Bricolage Grotesque",Figtree,sans-serif`;x.fillText("cleand",M+68*s,M+26*s);
+  x.textAlign="right";x.fillStyle=CARD.ink3;x.font=`500 ${28*s}px "DM Mono",monospace`;x.fillText(fmtDay(iso)||"",W-M,M+26*s);x.textAlign="left";
+}
+function cardPhoto(x,img,X,Y,PW,PH,lab,col,s){
+  const k=Math.max(PW/img.naturalWidth,PH/img.naturalHeight),sw=PW/k,sh=PH/k;
+  x.save();cardRR(x,X,Y,PW,PH,24*s);x.clip();x.drawImage(img,(img.naturalWidth-sw)/2,(img.naturalHeight-sh)/2,sw,sh,X,Y,PW,PH);x.restore();
+  x.strokeStyle=CARD.line;x.lineWidth=2;cardRR(x,X+1,Y+1,PW-2,PH-2,23*s);x.stroke();
+  x.font=`700 ${24*s}px Figtree,sans-serif`;const tw=x.measureText(lab).width;
+  x.fillStyle=col;cardRR(x,X+18*s,Y+18*s,tw+36*s,46*s,23*s);x.fill();x.fillStyle="#fff";x.textBaseline="middle";x.fillText(lab,X+36*s,Y+41*s);
+}
+function cardWrap(x,text,maxW){const words=String(text||"").split(/\s+/),lines=[];let cur="";for(const w of words){const t=cur?cur+" "+w:w;if(x.measureText(t).width>maxW&&cur){lines.push(cur);cur=w}else cur=t}if(cur)lines.push(cur);return lines}
+/* Collage: every room with a before and an after, one branded PNG */
+async function saveCollage(planId){
+  const w=winById(planId);if(!w||S.sharing)return;
+  const pairs=pairsFor(w,w.after||[]).pairs.filter(p=>p.a);
+  if(!pairs.length){toast("Add an after photo first");return}
+  S.sharing=true;toast("Making your collage…");
+  try{
+    await cardFonts();
+    const imgs=await Promise.all(pairs.map(async p=>[await cardImg(p.b.id),await cardImg(p.a.id)]));
+    const rows=pairs.map((p,i)=>({p,ib:imgs[i][0],ia:imgs[i][1]})).filter(r=>r.ib&&r.ia);
+    if(!rows.length){toast("Couldn't load the photos");return}
+    const asp=Math.min(4/3,Math.max(3/4,rows[0].ib.naturalWidth/rows[0].ib.naturalHeight));
+    let s=1;const base=()=>{const M=56*s,G=20*s,W=1600*s,PW=(W-M*2-G)/2,PH=Math.round(PW/asp),LAB=64*s,HEAD=290*s,FOOT=110*s;return {M,G,W:Math.round(W),PW,PH,LAB,HEAD,FOOT,H:Math.round(HEAD+rows.length*(LAB+PH+G*2)+FOOT)}};
+    let L=base();while(L.W*L.H>15e6&&s>.4){s-=.1;L=base()}
+    const {M,G,W,PW,PH,LAB,HEAD,FOOT,H}=L;
+    const c=document.createElement("canvas");c.width=W;c.height=H;const x=c.getContext("2d");
+    x.fillStyle=CARD.bg;x.fillRect(0,0,W,H);cardBrand(x,W,M,s,w.createdAt);
+    const mins=winMinutes(w),title=`${rows.length} room${rows.length===1?"":"s"}${mins?", "+fmtTime(mins):""}`;
+    x.textBaseline="middle";x.fillStyle=CARD.ink;x.font=`700 ${60*s}px "Bricolage Grotesque",Figtree,sans-serif`;x.fillText(title+" reset",M,M+118*s);
+    if(w.doneMsg){x.fillStyle=CARD.accent;x.font=`italic 500 ${30*s}px Figtree,sans-serif`;let t=w.doneMsg;while(x.measureText(t).width>W-M*2&&t.length>8)t=t.slice(0,-2);if(t!==w.doneMsg)t=t.trimEnd()+"…";x.fillText(t,M,M+172*s)}
+    let y=HEAD;
+    for(const r of rows){
+      x.fillStyle=CARD.ink;x.font=`700 ${36*s}px "Bricolage Grotesque",Figtree,sans-serif`;x.textBaseline="middle";x.fillText(r.p.b.name||"Area "+r.p.b.photo,M,y+LAB/2);
+      y+=LAB;cardPhoto(x,r.ib,M,y,PW,PH,"BEFORE","rgba(16,35,31,.82)",s);cardPhoto(x,r.ia,M+PW+G,y,PW,PH,"AFTER",CARD.accent,s);y+=PH+G*2;
+    }
+    x.fillStyle=CARD.ink3;x.font=`500 ${24*s}px "DM Mono",monospace`;x.textBaseline="middle";x.fillText("executive function, outsourced",M,H-FOOT/2);
+    const blob=await new Promise(r=>c.toBlob(r,"image/png"));if(!blob){toast("Couldn't make the collage");return}
+    await shareFiles([new File([blob],`cleand-${localDay(w.createdAt)}-collage.png`,{type:"image/png"})]);
+  }finally{S.sharing=false}
+}
 async function addAfters(list,input,planId,photoNo){
   const files=[...(list||[])];if(input)input.value="";
   if(!files.length)return;
@@ -857,6 +920,53 @@ const GOAL_MSGS={
   "Organization":["Everything has a home again. Look at that.","Like with like. Marie would nod politely."],
   "Biggest impact":["Maximum difference, minimum drama.","Walk in the front door and just take that in."]
 };
+/* A message about this specific clean: built from its rooms, steps, time and goal, then upgraded by Gemini when available. */
+function cleanFacts(p){
+  const done=(p.tasks||[]).filter(t=>t.done),rooms=[...new Set(done.map(t=>t.area).filter(Boolean))];
+  const big=done.slice().sort((a,b)=>b.minutes-a.minutes)[0],mins=p.actualMinutes||winMinutes(p),early=p.minutes&&mins&&mins<p.minutes-2?p.minutes-mins:0;
+  return {done,rooms,big,mins,early,total:(p.tasks||[]).length};
+}
+const listJoin=a=>a.length<=1?(a[0]||""):a.length===2?a.join(" and "):a.slice(0,-1).join(", ")+", and "+a[a.length-1];
+function specificMessage(p,part){
+  const f=cleanFacts(p),R=f.rooms.slice(0,3),more=f.rooms.length>3?` and ${f.rooms.length-3} more`:"",where=R.length?listJoin(R)+more:"the house";
+  const pick=a=>a[Math.floor(Math.random()*a.length)];
+  if(part)return {head:pick([`${f.done.length} step${f.done.length===1?"":"s"} done. That's real.`,`Progress on ${where}. It counts.`,`${fmtTime(f.mins||1)} of actual work. Banked.`]),
+    note:f.big?`"${f.big.title}" is checked off, and you can pick the rest back up whenever.`:"The rest will be right here when you're ready."};
+  const heads=[`${where}: reset.`,`${fmtTime(f.mins||p.minutes||1)}, ${f.done.length} steps, done.`,f.rooms.length>1?`${f.rooms.length} rooms back in working order.`:`${where} is back in working order.`];
+  const notes=[f.big?`"${f.big.title}" was the big one, and it's handled.`:"",f.early?`And you finished ${f.early} minutes early.`:"",
+    p.goal==="Prepare for maid"?"Ermalinda can get straight to the good stuff.":"",p.goal==="Quick win"?"Fast, visible, finished. Exactly the assignment.":"",
+    p.goal==="Biggest impact"?"Walk in and take that in for a second.":"",p.goal==="Organization"?"Everything has a home again.":""].filter(Boolean);
+  return {head:pick(heads),note:notes.length?pick(notes):doneMessage(p)};
+}
+async function aiCelebrate(p,part){
+  if(!getKey())return null;
+  const f=cleanFacts(p);
+  const prompt=`You write the celebration message in cleand, a home-reset app. The person just ${part?"made progress on (but did not finish)":"finished"} a cleaning session. Write a message about THIS specific clean.
+Facts:
+- Rooms: ${f.rooms.join(", ")||"unknown"}
+- Steps they completed: ${f.done.map(t=>`${t.area}: ${t.title}`).join("; ")||"none listed"}
+- Steps planned: ${f.total}
+- Time spent: ${f.mins||"unknown"} minutes${f.early?` (${f.early} minutes under the plan)`:""}
+- Goal: ${p.goal||"general reset"}
+Rules: warm, a little wry, specific (name at least one room or step). Celebrate what got done. Never mention how messy, dirty or bad it was before, and no jokes at the person's expense. No exclamation-point pileups, no emojis, no em dashes.${part?" Make it clear partial progress still counts, without guilt about what's left.":""}
+Reply with ONLY JSON: {"head":"short headline, max 8 words","note":"one sentence, max 22 words"}`;
+  try{const r=await Promise.race([geminiJSON(prompt,{}),new Promise((_,j)=>setTimeout(()=>j({code:"slow"}),9000))]);
+    if(r&&r.head&&r.note)return {head:String(r.head).slice(0,80),note:String(r.note).slice(0,200)}}catch(e){console.warn(e)}
+  return null;
+}
+function celebrate(p,part){
+  const m=specificMessage(p,part);p.doneMsg=m.head+" "+m.note;S.cel={id:p.id,part,...m,ai:false};renderCel();$("#sheet").hidden=false;savePlan();
+  aiCelebrate(p,part).then(r=>{if(!r||!S.plan||S.plan.id!==p.id)return;p.doneMsg=r.head+" "+r.note;savePlan();if(S.cel&&S.cel.id===p.id){Object.assign(S.cel,r,{ai:true});renderCel()}render()});
+}
+function renderCel(){
+  const c=S.cel,p=S.plan;if(!c||!p)return;const f=cleanFacts(p);
+  $("#sheet").innerHTML=`<div class="sheet cel ${c.part?"part":""}" role="dialog" aria-label="Celebration">
+    <div class="celtop"><span class="celbadge">${c.part?"Progress":"Clean complete"}</span><button class="iconbtn" data-act="celclose" aria-label="Close">✕</button></div>
+    <h2 class="celhead">${esc(c.head)}</h2><p class="celnote">${esc(c.note)}</p>
+    <div class="celstats"><div><b>${fmtTime(f.mins||1)}</b><span>time</span></div><div><b>${f.done.length}${c.part?`/${f.total}`:""}</b><span>steps</span></div><div><b>${f.rooms.length||1}</b><span>room${f.rooms.length===1?"":"s"}</span></div></div>
+    ${f.rooms.length?`<div class="celrooms">${f.rooms.map(r=>`<span>${esc(r)}</span>`).join("")}</div>`:""}
+    <button class="btn primary big" data-act="celclose" style="margin-top:16px">${icon.cam}<span>Snap the after photos</span></button></div>`;
+}
 function doneMessage(p){const pool=[...(GOAL_MSGS[p.goal]||[]),...(GOAL_MSGS[p.goal]||[]),...DONE_MSGS];return pool[Math.floor(Math.random()*pool.length)]}
 /* Clean complete: ask finished vs. partly done, and ask how long it took when the clock wasn't used. */
 function usedClock(p){return workMs(p)>=60000}
@@ -883,11 +993,9 @@ function completeJob(){
   const clock=usedClock(p);if(!clock&&!(+w.mins>0))return;
   pauseClock(p);p.actualMinutes=clock?Math.max(1,Math.round(workMs(p)/60000)):Math.round(+w.mins);
   p.completedAt=new Date().toISOString();S.wrap=null;$("#sheet").hidden=true;
-  if(w.fin==="part"){p.status="partial";savePlan();render();toast("Saved. Progress counts.");
-    setTimeout(()=>{const a=$("#aftersec");a&&a.scrollIntoView({behavior:"smooth",block:"center"})},600);return}
-  p.tasks.forEach(t=>t.done=true);p.status="done";p.doneMsg=doneMessage(p);
-  savePlan();render();confetti();toast(p.doneMsg);
-  setTimeout(()=>{const a=$("#aftersec");a&&a.scrollIntoView({behavior:"smooth",block:"center"})},1400);
+  if(w.fin==="part"){p.status="partial";render();celebrate(p,true);return}
+  p.tasks.forEach(t=>t.done=true);p.status="done";
+  render();confetti();celebrate(p,false);
 }
 async function saveForLater(){
   const p=S.plan;if(!p)return;pauseClock(p);p.status="saved";await saveNow(p);
@@ -1158,7 +1266,7 @@ function winsHTML(){
     return `<article class="win">${summary}<div class="winmeta" style="margin-top:10px"><span>${done}/${total} steps</span>${w.energy?`<span>${esc(w.energy)}</span>`:""}</div>
     ${w.doneMsg?`<p class="hint" style="margin-top:4px;font-style:italic">“${esc(w.doneMsg)}”</p>`:""}
     ${(()=>{const pf=pairsFor({...w,after},after);return `<div class="bas">${pf.pairs.map(({b,a})=>baHTML(w,b,a)).join("")||`<p class="hint">No photos saved for this reset.</p>`}</div>${unmatchedHTML({...w,after},pf)}${(()=>{const tr=(isCur?S.plan.trashAfter:w.trashAfter)||[];return tr.length?`<div class="unm"><div class="k">Deleted photos · kept ${TRASH_DAYS} days</div><div class="trrow">${tr.map(x=>`<div class="trph"><img src="${blobUrl(x.id)}" alt="Deleted photo"><button class="chip sm" data-act="restoreph" data-id="${w.id}" data-v="${x.id}">Restore</button></div>`).join("")}</div></div>`:""})()}${S.pickFor===w.id?`<div class="pickwrap"><div class="k">Add afters · tap the room</div>${roomPickHTML({...w,after},after)}</div>`:""}`})()}${up?`<p class="hint">Saving ${up} photo${up>1?"s":""}…</p>`:""}
-    <div class="winacts"><button class="btn" data-act="saveall" data-id="${w.id}">${icon.save}<span>Save photos</span></button>${S.assets&&(w.before||[]).length?`<button class="btn" data-act="pickafter" data-id="${w.id}" aria-expanded="${S.pickFor===w.id}">${icon.cam}<span>${S.pickFor===w.id?"Done adding":"Add afters"}</span></button>`:""}
+    <div class="winacts">${(w.after||[]).length||(isCur&&(S.plan.after||[]).length)?`<button class="btn primary" data-act="collage" data-id="${w.id}">${icon.share}<span>Share collage</span></button>`:""}<button class="btn" data-act="saveall" data-id="${w.id}">${icon.save}<span>Save all photos</span></button>${S.assets&&(w.before||[]).length?`<button class="btn" data-act="pickafter" data-id="${w.id}" aria-expanded="${S.pickFor===w.id}">${icon.cam}<span>${S.pickFor===w.id?"Done adding":"Add afters"}</span></button>`:""}
     ${isCur?`<button class="btn" data-act="nav" data-v="plan">Open plan</button>`:!isDone?`<button class="btn primary" data-act="resume" data-id="${w.id}">Resume</button>`:""}${!isCur&&(w.tasks||[]).length?`<button class="btn" data-act="repeat" data-id="${w.id}">↻ Do this again</button>`:""}
     <span class="spacer"></span>${S.confirmDel===w.id?`<span class="delwarn">Deletes this whole reset and all its photos.</span><button class="btn" data-act="delno">Keep</button><button class="btn danger solid" data-act="delwin" data-id="${w.id}">Delete reset</button>`:`<button class="btn ghost danger" data-act="delask" data-id="${w.id}">Delete whole reset</button>`}</div></article>`;
   }).join("")+trashHTML()+`<div style="height:40px"></div>`;
@@ -1187,7 +1295,7 @@ function renderPlanParts(){
       ${S.fillErr?`<div class="note err">${esc(S.fillErr)}</div>`:""}</div>`:"";
   }
   const ja=$("#jobacts");
-  if(ja)ja.innerHTML=p.status==="done"?`<div class="donebanner"><b>${esc(p.doneMsg||"Job complete 🎉")}</b>${p.actualMinutes?`${fmtTime(p.actualMinutes)} well spent. `:""}Now snap the after photos below so you can admire it later.</div>`
+  if(ja)ja.innerHTML=p.status==="done"?`<div class="donebanner"><b>${esc(p.doneMsg||"Job complete 🎉")}</b>${(p.after||[]).length?`<button class="btn primary" data-act="collage" data-id="${p.id}" style="margin-top:10px">${icon.share}<span>Share collage</span></button>`:"Now snap the after photos below so you can admire it later."}</div>`
     :p.status==="partial"?`<div class="donebanner part"><b>Progress counts.</b>${p.actualMinutes?`${fmtTime(p.actualMinutes)} logged. `:""}Snap the after photos below. You can pick the rest back up from Wins anytime.</div>`
     :`<div class="jobacts"><button class="btn primary big" data-act="complete">✓ Clean complete${all?"":` · ${done}/${total} steps`}</button>
       <button class="btn big" data-act="later">Save for later</button></div>`;
@@ -1231,6 +1339,8 @@ document.addEventListener("click",e=>{
   else if(a==="wintoggle"){const id=b.dataset.id;S.openWins=S.openWins||new Set();S.openWins.has(id)?S.openWins.delete(id):S.openWins.add(id);render()}
   else if(a==="savephoto")savePhoto(b.dataset.id,v,b.dataset.cap);
   else if(a==="saveall")saveAll(b.dataset.id);
+  else if(a==="celclose"){S.cel=null;$("#sheet").hidden=true;render();setTimeout(()=>{const a=$("#aftersec");a&&a.scrollIntoView({behavior:"smooth",block:"center"})},150)}
+  else if(a==="collage")saveCollage(b.dataset.id);
   else if(a==="sbs")saveSideBySide(b.dataset.id,v);
   else if(a==="rmafter")removeAfter(b.dataset.id,v);
   else if(a==="assign")assignAfter(b.dataset.id,v,+b.dataset.photo);
@@ -1322,7 +1432,7 @@ async function restoreAll(file,input){
 function setKey(k){try{k?localStorage.setItem("cleand_gemini_key",k):localStorage.removeItem("cleand_gemini_key")}catch(e){}}
 let sheetErr="",sheetBusy=false;
 function openSettings(){sheetErr="";renderSheet();$("#sheet").hidden=false}
-function closeSettings(){$("#sheet").hidden=true;S.wrap=null;S.backupFile=null;render()}
+function closeSettings(){$("#sheet").hidden=true;S.wrap=null;S.cel=null;S.backupFile=null;render()}
 function renderSheet(){
   const k=getKey();
   $("#sheet").innerHTML=`<div class="sheet" role="dialog" aria-modal="true" aria-label="Settings">
