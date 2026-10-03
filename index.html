@@ -129,7 +129,7 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:12px 0 10px;heigh
 textarea,.inp{width:100%;border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:11px 12px;font-size:16px;line-height:1.4}
 textarea{resize:vertical;min-height:74px}
 .hint{font-size:13px;color:var(--ink-3);margin:8px 0 0}
-.note{border-radius:12px;padding:11px 13px;font-size:14px;margin-top:12px}
+.note{border-radius:12px;padding:11px 13px;font-size:14px;margin-top:12px;background:var(--accent-soft);color:var(--ink)}
 .note.err{background:var(--danger-soft);color:var(--danger)}
 .note.info{background:var(--surface-2);color:var(--ink-2)}
 .go{margin-top:14px;padding-bottom:12px}
@@ -241,6 +241,11 @@ textarea{resize:vertical;min-height:74px}
 .bahead .sbs{flex:none;display:inline-flex;align-items:center;gap:6px;border:0;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:13.5px;padding:7px 13px 7px 11px;border-radius:999px;min-height:34px}
 .bahead .sbs:active{transform:scale(.97)}
 .ba .swipe{text-align:center;font-size:12px;color:var(--accent);font-weight:700;margin-top:4px}
+.pickwrap{margin-top:14px;border-top:1px dashed var(--line);padding-top:10px}
+.pickwrap .k{font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;color:var(--ink-3)}
+.trrow{display:flex;flex-wrap:wrap;gap:10px}
+.trph{display:flex;flex-direction:column;align-items:center;gap:6px}
+.trph img{width:76px;height:76px;border-radius:10px;object-fit:cover;opacity:.7}
 .unm{margin-top:14px;border-top:1px dashed var(--line);padding-top:10px}
 .unm .k{font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;color:var(--ink-3);margin-bottom:8px}
 .unrow{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px}
@@ -292,6 +297,14 @@ textarea{resize:vertical;min-height:74px}
 .noafter label{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;height:100%;color:var(--ink-2);cursor:pointer;border:2px dashed var(--line);border-radius:14px}
 .noafter label span{color:var(--accent)}
 .noafter input{position:absolute;inset:0;opacity:0;font-size:0}
+.cmp{position:relative;aspect-ratio:4/3;border-radius:14px;overflow:hidden;background:var(--surface-2);touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.cmp img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none}
+.cmp .cb{clip-path:inset(0 calc(100% - var(--x)) 0 0)}
+.cmp .cl{position:absolute;top:10px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:3px 10px;pointer-events:none}
+.cmp .cl.l{left:10px;background:rgba(0,0,0,.62);color:#fff}.cmp .cl.r{right:10px;background:var(--accent);color:var(--accent-ink)}
+.cmp .cline{position:absolute;top:0;bottom:0;left:var(--x);width:3px;margin-left:-1.5px;background:#fff;box-shadow:0 0 8px rgba(0,0,0,.35);pointer-events:none}
+.cmp .cline i{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:38px;height:38px;border-radius:50%;background:#fff;color:var(--accent);display:grid;place-items:center;font-style:normal;font-weight:800;font-size:15px;box-shadow:0 2px 10px rgba(0,0,0,.3)}
+.cmp input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:ew-resize;-webkit-appearance:none;appearance:none}
 .badots{display:flex;justify-content:center;gap:6px;margin-top:8px}
 .badots i{width:7px;height:7px;border-radius:50%;background:var(--line)}
 .badots i.on{background:var(--accent)}
@@ -302,7 +315,10 @@ textarea{resize:vertical;min-height:74px}
 .snap .pics img,.snap .ph{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;background:var(--surface-2);display:grid;place-items:center;color:var(--accent)}
 .snap .nm{font-weight:700;font-size:14px;margin-top:3px}
 .snap small{font-size:12px;color:var(--accent);font-weight:700}
-.snap input{position:absolute;inset:0;opacity:0;font-size:0}
+.snapbtns{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:4px}
+.snapbtns label{position:relative;display:flex;align-items:center;justify-content:center;gap:4px;min-height:36px;border-radius:9px;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:12.5px;cursor:pointer}
+.snapbtns input{position:absolute;inset:0;opacity:0;font-size:0;width:100%}
+.snap{cursor:default}
 .pair{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
 .pair .col .k{font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;color:var(--ink-3);margin-bottom:6px}
 .pair .col.a .k{color:var(--accent)}
@@ -432,6 +448,8 @@ async function saveCam(){const f=S.camQueue.slice();S.camQueue=[];showSaveBar();
 function toast(msg){const t=$("#toast");t.textContent=msg;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,2600)}
 const fmtTime=m=>m>=60?(m%60?`${Math.floor(m/60)} hr ${m%60} min`:`${m/60} hour${m>=120?"s":""}`):`${m} min`;
 const icon={
+  roomcam:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',
+  roomlib:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>',
   share:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>',
   save:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg>',
   trash:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/></svg>',
@@ -487,11 +505,18 @@ function pairsFor(w,after){
 function winTarget(planId){const isCur=S.plan&&S.plan.id===planId;return {isCur,t:isCur?S.plan:(()=>{const w=S.wins.find(x=>x.id===planId);return w?JSON.parse(JSON.stringify(w)):null})()}}
 async function saveTarget(planId,isCur,t){if(isCur)savePlan();else await S.db.doc("resets/"+planId).set(t)}
 async function removeAfter(planId,afterId){
-  if(!confirm("Delete just this after photo? Your before photo stays."))return;
   const {isCur,t}=winTarget(planId);if(!t)return;
-  t.after=(t.after||[]).filter(x=>x.id!==afterId);await saveTarget(planId,isCur,t);
-  if(S.assets)S.assets.delete(afterId).catch(()=>{});
-  render();toast("After photo removed");
+  const x=(t.after||[]).find(y=>y.id===afterId);if(!x)return;
+  t.after=t.after.filter(y=>y.id!==afterId);
+  t.trashAfter=(t.trashAfter||[]).concat([{...x,deletedAt:new Date().toISOString()}]);
+  await saveTarget(planId,isCur,t);render();toast("Photo deleted. Restore it from this reset in Wins.");
+}
+async function restoreAfter(planId,afterId){
+  const {isCur,t}=winTarget(planId);if(!t)return;
+  const x=(t.trashAfter||[]).find(y=>y.id===afterId);if(!x)return;
+  t.trashAfter=t.trashAfter.filter(y=>y.id!==afterId);const r={...x};delete r.deletedAt;
+  if(r.photo&&(t.after||[]).some(y=>y.photo===r.photo))r.photo=null;
+  t.after=(t.after||[]).concat([r]);await saveTarget(planId,isCur,t);render();toast("Photo restored");
 }
 async function assignAfter(planId,afterId,photo){
   const {isCur,t}=winTarget(planId);if(!t)return;
@@ -588,9 +613,12 @@ async function restoreWin(id){
   try{await S.db.doc("resets/"+id).set(t);S.openWins=S.openWins||new Set();S.openWins.add(id);toast("Restored, photos and all.")}catch(e){toast("Couldn't restore that. Try again.")}
 }
 async function purgeWin(w){
-  try{await S.db.doc("resets/"+w.id).delete();if(S.assets)for(const p of [...(w.before||[]),...(w.after||[])])S.assets.delete(p.id).catch(()=>{})}catch(e){console.warn(e)}
+  try{await S.db.doc("resets/"+w.id).delete();if(S.assets)for(const p of [...(w.before||[]),...(w.after||[]),...(w.trashAfter||[])])S.assets.delete(p.id).catch(()=>{})}catch(e){console.warn(e)}
 }
-function purgeTrash(){const cut=Date.now()-TRASH_DAYS*864e5;(S.trash||[]).filter(w=>new Date(w.deletedAt).getTime()<cut).forEach(purgeWin)}
+function purgeTrash(){const cut=Date.now()-TRASH_DAYS*864e5;(S.trash||[]).filter(w=>new Date(w.deletedAt).getTime()<cut).forEach(purgeWin);
+  (S.wins||[]).forEach(w=>{const old=(w.trashAfter||[]).filter(x=>new Date(x.deletedAt).getTime()<cut);if(!old.length||(S.plan&&S.plan.id===w.id))return;
+    const t=JSON.parse(JSON.stringify(w));t.trashAfter=t.trashAfter.filter(x=>!old.some(o=>o.id===x.id));S.db.doc("resets/"+w.id).set(t).catch(()=>{});
+    if(S.assets)old.forEach(x=>S.assets.delete(x.id).catch(()=>{}))})}
 async function deleteWin(id){
   const w=S.wins.find(x=>x.id===id);if(!w||!S.db)return;
   S.confirmDel=null;
@@ -865,6 +893,20 @@ async function saveForLater(){
   const p=S.plan;if(!p)return;pauseClock(p);p.status="saved";await saveNow(p);
   S.plan=null;clearClean();toast("Saved for later. Pick it back up in Wins.");
 }
+/* Rerun a past reset: same rooms and steps, fresh checkboxes and clock. Before photos are copied so the new reset has its own. */
+async function repeatJob(id){
+  const w=S.wins.find(x=>x.id===id);if(!w||S.busy)return;
+  if(S.plan){pauseClock(S.plan);if(S.plan.status!=="done"&&S.plan.status!=="partial")S.plan.status="saved";await saveNow(S.plan)}
+  toast("Setting it up…");
+  const before=[];
+  for(const b of (w.before||[])){try{const blob=S.assets&&await S.assets.get(b.id);if(blob)before.push({...b,id:await uploadBlob(blob)})}catch(e){console.warn(e)}}
+  S.areas.forEach(a=>URL.revokeObjectURL(a.url));S.areas=[];
+  const keep=["minutes","title","startLine","strategy","stopRule","extra","saw","goal","energy","goalText","energyText","ai"];
+  const np={};keep.forEach(k=>{if(w[k]!==undefined)np[k]=JSON.parse(JSON.stringify(w[k]))});
+  Object.assign(np,{id:uid(),createdAt:new Date().toISOString(),repeatOf:w.id,status:"active",startedAt:null,elapsedMs:0,before,after:[],
+    tasks:(w.tasks||[]).map(t=>({...t,id:uid(),done:false}))});
+  S.plan=np;S.view="plan";savePlan();render();window.scrollTo({top:0});toast("Same plan, fresh start. Before photos are from last time.");
+}
 async function resumeJob(id){
   const w=S.wins.find(x=>x.id===id);if(!w)return;
   if(S.plan&&S.plan.id!==id){pauseClock(S.plan);if(S.plan.status!=="done"&&S.plan.status!=="partial")S.plan.status="saved";await saveNow(S.plan)}
@@ -1019,16 +1061,21 @@ function planHTML(){
   ${S.copyText?`<div class="sec"><p class="hint" style="margin:0 0 8px">Copy didn't work here. Select the text below and copy it.</p><textarea id="copyout" class="copyout" readonly>${esc(S.copyText)}</textarea></div>`:""}
   <div class="acts"><button class="btn" data-act="copy">Copy plan</button>${S.areas.length?`<button class="btn" data-act="edit">Change settings</button>`:""}<button class="btn primary" data-act="new">Start over</button></div>`;
 }
+/* Pick the room first, then camera or library, so after photos never land unsorted. */
+function roomPickHTML(w,list){
+  return `<div class="areasnap">${pairsFor(w,list).pairs.map(({b,a})=>`<div class="snapwrap"><div class="snap ${a?"has":""}"><span class="pics"><img src="${blobUrl(b.id)}" alt="">${a?`<img src="${blobUrl(a.id)}" alt="">`:`<span class="ph">${icon.cam}</span>`}</span><span class="nm">${esc(b.name||"Area "+b.photo)}</span>
+    <span class="snapbtns"><label>${icon.roomcam}<span>${a?"Retake":"Camera"}</span><input type="file" accept="image/*" capture="environment" data-after="${w.id}" data-photo="${b.photo}" aria-label="Take after photo for ${esc(b.name||"this area")}"></label><label>${icon.roomlib}<span>Library</span><input type="file" accept="image/*" data-after="${w.id}" data-photo="${b.photo}" aria-label="Choose after photo for ${esc(b.name||"this area")}"></label></span></div>${a?`<button class="snaprm" data-act="rmafter" data-id="${w.id}" data-v="${a.id}" aria-label="Delete after photo for ${esc(b.name||"this area")}">${icon.trash}</button>`:""}</div>`).join("")}</div>`;
+}
 function afterHTML(p){
   const up=S.uploading[p.id]||0,list=p.after||[];
   return `<section class="sec after" id="aftersec"><h2>After photos</h2>
   <p class="hint" style="margin-top:4px">${S.assets?"Snap what you reset. It's saved to Wins next to the before shots, so you can admire it later.":"Photo saving isn't available in this browser."}</p>
-  ${(p.before||[]).length&&S.assets?`<div class="areasnap">${pairsFor(p,list).pairs.map(({b,a})=>`<div class="snapwrap"><label class="snap ${a?"has":""}"><span class="pics"><img src="${blobUrl(b.id)}" alt="">${a?`<img src="${blobUrl(a.id)}" alt="">`:`<span class="ph">${icon.cam}</span>`}</span><span class="nm">${esc(b.name||"Area "+b.photo)}</span><small>${a?"Retake after":"Snap after"}</small><input type="file" accept="image/*" capture="environment" data-after="${p.id}" data-photo="${b.photo}"></label>${a?`<button class="snaprm" data-act="rmafter" data-id="${p.id}" data-v="${a.id}" aria-label="Remove after photo for ${esc(b.name||"this area")}">${icon.trash}</button>`:""}</div>`).join("")}</div>
+  ${(p.before||[]).length&&S.assets?`<p class="hint" style="margin-top:2px">Tap the room, then take or choose its after photo.</p>${roomPickHTML(p,list)}
     ${up?`<p class="hint">Saving ${up} photo${up>1?"s":""}…</p>`:""}
     ${unmatchedHTML(p,pairsFor(p,list))}
-    <p class="hint" style="margin-top:10px">Or add several at once from your library, then tap which area each one goes with.</p>`
+`
   :list.length||up?`<div class="thumbs">${list.map((x,i)=>`<div class="th"><button class="open" data-act="lb" data-src="${blobUrl(x.id)}" data-cap="After ${i+1}"><img src="${blobUrl(x.id)}" alt="After photo ${i+1}"></button></div>`).join("")}${Array.from({length:up},()=>`<div class="th busy"><div class="spinner" style="width:26px;height:26px"></div></div>`).join("")}</div>`:""}
-  ${S.assets?`<div class="pacts"><label class="pact main">${icon.cam}<b>Take after photo</b><small>Tap again for the next area</small><input type="file" accept="image/*" capture="environment" data-after="${p.id}"></label>
+  ${S.assets&&!(p.before||[]).length?`<div class="pacts"><label class="pact main">${icon.cam}<b>Take after photo</b><small>Tap again for the next area</small><input type="file" accept="image/*" capture="environment" data-after="${p.id}"></label>
   <label class="pact">${icon.lib}<b>Choose photos</b><small>From your library</small><input type="file" accept="image/*" multiple data-after="${p.id}"></label></div>`:""}
   ${p.status==="done"?`<button class="btn primary big" data-act="finish" style="margin-top:14px">${list.length?"All done · Back to home":"Skip photos · Back to home"}</button>`:""}</section>`;
 }
@@ -1043,7 +1090,7 @@ function baHTML(w,b,a){
     <div class="slidebtns"><button data-act="savephoto" data-id="${w.id}" data-v="${x.id}" data-cap="${esc(name+" "+lab)}" aria-label="Save ${lab} photo">${icon.save}</button>${lab==="After"?`<button data-act="rmafter" data-id="${w.id}" data-v="${x.id}" aria-label="Remove after photo">${icon.trash}</button>`:""}</div></figure>`;
   const slides=[slide(b,"Before"),a?slide(a,"After"):(S.assets?`<figure class="noafter"><label><span>${icon.cam}</span><b>Add the after</b><small>for ${esc(name)}</small><input type="file" accept="image/*" data-after="${w.id}" data-photo="${b.photo}"></label></figure>`:"")].filter(Boolean);
   const rooms=getRooms(),opts=[...new Set([name,...rooms])];
-  return `<div class="ba"><div class="bahead"><label class="rn"><span class="sr">Room name</span><select data-rename="${b.photo}" data-id="${w.id}">${opts.map(r=>`<option ${r===name?"selected":""}>${esc(r)}</option>`).join("")}<option value="__new">✎ Type a new name…</option></select></label>${a?`<button class="sbs" data-act="sbs" data-id="${w.id}" data-v="${b.photo}" aria-label="Share before and after image of ${esc(name)}">${icon.share}<span>Share</span></button>`:""}</div><div class="baslides">${slides.join("")}</div>${slides.length>1?`<div class="badots"><i class="on"></i><i></i></div><div class="swipe">${a?"Swipe for after →":"Swipe to add the after →"}</div>`:""}
+  return `<div class="ba"><div class="bahead"><label class="rn"><span class="sr">Room name</span><select data-rename="${b.photo}" data-id="${w.id}">${opts.map(r=>`<option ${r===name?"selected":""}>${esc(r)}</option>`).join("")}<option value="__new">✎ Type a new name…</option></select></label>${a?`<button class="sbs" data-act="sbs" data-id="${w.id}" data-v="${b.photo}" aria-label="Share before and after image of ${esc(name)}">${icon.share}<span>Share</span></button>`:""}</div>${a?`<div class="cmp" style="--x:50%"><img src="${blobUrl(a.id)}" alt="${esc("After "+name)}" loading="lazy"><img class="cb" src="${blobUrl(b.id)}" alt="${esc("Before "+name)}" loading="lazy"><span class="cl l">Before</span><span class="cl r">After</span><span class="cline"><i>‹ ›</i></span><input type="range" min="0" max="100" value="50" aria-label="Drag to compare before and after for ${esc(name)}" data-cmp></div><div class="swipe">Drag to compare</div>`:`<div class="baslides">${slides.join("")}</div>${slides.length>1?`<div class="badots"><i class="on"></i><i></i></div><div class="swipe">Swipe to add the after →</div>`:""}`}
     ${a?`<div class="afterbar"><img src="${blobUrl(a.id)}" alt=""><span>After photo</span>
       <label class="mv"><span class="sr">Move after photo to another room</span><select data-move="${a.id}" data-id="${w.id}"><option value="">Wrong room? Move…</option>${(w.before||[]).filter(x=>x.photo!==b.photo).map(x=>`<option value="${x.photo}">${esc(x.name||"Area "+x.photo)}</option>`).join("")}<option value="0">Not matched</option></select></label>
       <button class="rm" data-act="rmafter" data-id="${w.id}" data-v="${a.id}">${icon.trash}<span>Delete</span></button></div>`:""}</div>`;
@@ -1110,9 +1157,9 @@ function winsHTML(){
     if(!open)return `<article class="win closed">${summary}</article>`;
     return `<article class="win">${summary}<div class="winmeta" style="margin-top:10px"><span>${done}/${total} steps</span>${w.energy?`<span>${esc(w.energy)}</span>`:""}</div>
     ${w.doneMsg?`<p class="hint" style="margin-top:4px;font-style:italic">“${esc(w.doneMsg)}”</p>`:""}
-    ${(()=>{const pf=pairsFor({...w,after},after);return `<div class="bas">${pf.pairs.map(({b,a})=>baHTML(w,b,a)).join("")||`<p class="hint">No photos saved for this reset.</p>`}</div>${unmatchedHTML({...w,after},pf)}`})()}${up?`<p class="hint">Saving ${up} photo${up>1?"s":""}…</p>`:""}
-    <div class="winacts"><button class="btn" data-act="saveall" data-id="${w.id}">${icon.save}<span>Save photos</span></button>${S.assets?`<label class="pact">${icon.lib}<span>Add afters</span><input type="file" accept="image/*" multiple data-after="${w.id}"></label>`:""}
-    ${isCur?`<button class="btn" data-act="nav" data-v="plan">Open plan</button>`:!isDone?`<button class="btn primary" data-act="resume" data-id="${w.id}">Resume</button>`:""}
+    ${(()=>{const pf=pairsFor({...w,after},after);return `<div class="bas">${pf.pairs.map(({b,a})=>baHTML(w,b,a)).join("")||`<p class="hint">No photos saved for this reset.</p>`}</div>${unmatchedHTML({...w,after},pf)}${(()=>{const tr=(isCur?S.plan.trashAfter:w.trashAfter)||[];return tr.length?`<div class="unm"><div class="k">Deleted photos · kept ${TRASH_DAYS} days</div><div class="trrow">${tr.map(x=>`<div class="trph"><img src="${blobUrl(x.id)}" alt="Deleted photo"><button class="chip sm" data-act="restoreph" data-id="${w.id}" data-v="${x.id}">Restore</button></div>`).join("")}</div></div>`:""})()}${S.pickFor===w.id?`<div class="pickwrap"><div class="k">Add afters · tap the room</div>${roomPickHTML({...w,after},after)}</div>`:""}`})()}${up?`<p class="hint">Saving ${up} photo${up>1?"s":""}…</p>`:""}
+    <div class="winacts"><button class="btn" data-act="saveall" data-id="${w.id}">${icon.save}<span>Save photos</span></button>${S.assets&&(w.before||[]).length?`<button class="btn" data-act="pickafter" data-id="${w.id}" aria-expanded="${S.pickFor===w.id}">${icon.cam}<span>${S.pickFor===w.id?"Done adding":"Add afters"}</span></button>`:""}
+    ${isCur?`<button class="btn" data-act="nav" data-v="plan">Open plan</button>`:!isDone?`<button class="btn primary" data-act="resume" data-id="${w.id}">Resume</button>`:""}${!isCur&&(w.tasks||[]).length?`<button class="btn" data-act="repeat" data-id="${w.id}">↻ Do this again</button>`:""}
     <span class="spacer"></span>${S.confirmDel===w.id?`<span class="delwarn">Deletes this whole reset and all its photos.</span><button class="btn" data-act="delno">Keep</button><button class="btn danger solid" data-act="delwin" data-id="${w.id}">Delete reset</button>`:`<button class="btn ghost danger" data-act="delask" data-id="${w.id}">Delete whole reset</button>`}</div></article>`;
   }).join("")+trashHTML()+`<div style="height:40px"></div>`;
 }
@@ -1171,6 +1218,9 @@ document.addEventListener("click",e=>{
   else if(a==="later")saveForLater();
   else if(a==="fill")fillTime(+v);
   else if(a==="resume")resumeJob(b.dataset.id);
+  else if(a==="backup")backupAll();
+  else if(a==="savebackup"){const f=S.backupFile;if(f){shareFiles([f]).then(()=>{try{localStorage.setItem("cleand_lastbackup",new Date().toISOString())}catch(e){}S.backupFile=null;renderSheet()})}}
+  else if(a==="repeat")repeatJob(b.dataset.id);
   else if(a==="copy")copyPlan();
   else if(a==="new")newReset();
   else if(a==="edit"){S.view="setup";render();window.scrollTo({top:0})}
@@ -1185,6 +1235,8 @@ document.addEventListener("click",e=>{
   else if(a==="rmafter")removeAfter(b.dataset.id,v);
   else if(a==="assign")assignAfter(b.dataset.id,v,+b.dataset.photo);
   else if(a==="lbclose")$("#lb").hidden=true;
+  else if(a==="pickafter"){S.pickFor=S.pickFor===b.dataset.id?null:b.dataset.id;render()}
+  else if(a==="restoreph")restoreAfter(b.dataset.id,v);
   else if(a==="rename")askRename(b.dataset.id,+v,b.dataset.name);
   else if(a==="delask"){S.confirmDel=b.dataset.id;render()}
   else if(a==="delno"){S.confirmDel=null;render()}
@@ -1197,7 +1249,8 @@ document.addEventListener("click",e=>{
 });
 document.addEventListener("input",e=>{
   const t=e.target;
-  if(t.id==="wrapmins"){if(S.wrap){S.wrap.mins=t.value;const sv=document.querySelector('[data-act="wrapsave"]');if(sv)sv.disabled=!(S.wrap.fin&&+t.value>0);document.querySelectorAll('[data-act="wrapmin"]').forEach(x=>x.setAttribute("aria-pressed",String(+x.dataset.v===+t.value)))}}
+  if(t.dataset.cmp!==undefined){t.parentElement.style.setProperty("--x",t.value+"%")}
+  else if(t.id==="wrapmins"){if(S.wrap){S.wrap.mins=t.value;const sv=document.querySelector('[data-act="wrapsave"]');if(sv)sv.disabled=!(S.wrap.fin&&+t.value>0);document.querySelectorAll('[data-act="wrapmin"]').forEach(x=>x.setAttribute("aria-pressed",String(+x.dataset.v===+t.value)))}}
   else if(t.id==="timebig"){const n=Math.round(+t.value);if(n>=1){S.time=Math.min(240,n);const r=$("#trange");if(r)r.value=Math.min(120,S.time);document.querySelectorAll('[data-act="time"]').forEach(x=>x.setAttribute("aria-pressed",String(+x.dataset.v===S.time)))}}
   else if(t.id==="trange"){S.time=+t.value;{const tb=$("#timebig");if(tb)tb.value=S.time}document.querySelectorAll('[data-act="time"]').forEach(x=>x.setAttribute("aria-pressed",String(+x.dataset.v===S.time)))}
   else if(t.id==="cgoal")S.customGoal=t.value;
@@ -1205,7 +1258,8 @@ document.addEventListener("input",e=>{
 });
 document.addEventListener("change",e=>{
   const t=e.target;
-  if(t.id==="camin"||t.id==="libin"){queueCam(t.files,t);addFiles(t.files,t)}
+  if(t.id==="restorein")restoreAll(t.files&&t.files[0],t);
+  else if(t.id==="camin"||t.id==="libin"){queueCam(t.files,t);addFiles(t.files,t)}
   else if(t.dataset.check)toggleTask(t.dataset.check,t.checked);
   else if(t.dataset.move){const v=t.value;if(v!=="")assignAfter(t.dataset.id,t.dataset.move,+v||null)}
   else if(t.dataset.rename){if(t.value==="__new"){const cur=t.querySelector("option[selected]");t.value=cur?cur.value:"";askRename(t.dataset.id,+t.dataset.rename,cur?cur.value:"")}else renameArea(t.dataset.id,+t.dataset.rename,t.value)}
@@ -1234,10 +1288,41 @@ async function renameArea(planId,photo,name){
   (t.saw||[]).forEach(x=>{if(x.photo===photo)x.name=name});(t.tasks||[]).forEach(x=>{if(x.photo===photo||(!x.photo&&x.area===old))x.area=name});
   await saveTarget(planId,isCur,t);render();toast("Renamed to "+name);
 }
+const BACKUP_LS=["cleand_rooms","cleand_timing","cleand_model"];
+const blobToData=b=>new Promise((r,j)=>{const f=new FileReader();f.onload=()=>r(f.result);f.onerror=j;f.readAsDataURL(b)});
+async function backupAll(){
+  if(!S.idb){toast("Nothing to back up in this browser");return}
+  S.backingUp=true;renderSheet();
+  try{
+    const d=S.idb,keys=await idbReq(d,"docs","readonly",st=>st.getAllKeys()),docs={};
+    for(const k of keys)docs[k]=await idbReq(d,"docs","readonly",st=>st.get(k));
+    const bkeys=await idbReq(d,"blobs","readonly",st=>st.getAllKeys()),blobs={};
+    for(const k of bkeys){const b=await idbReq(d,"blobs","readonly",st=>st.get(k));if(b)blobs[k]=await blobToData(b)}
+    const ls={};BACKUP_LS.forEach(k=>{try{const v=localStorage.getItem(k);if(v!=null)ls[k]=v}catch(e){}});
+    const out={app:"cleand",version:1,at:new Date().toISOString(),docs,blobs,ls};
+    S.backupFile=new File([JSON.stringify(out)],`cleand-backup-${localDay()}.json`,{type:"application/json"});
+    S.backupInfo=`${Object.keys(docs).filter(k=>k.startsWith("resets/")).length} resets, ${Object.keys(blobs).length} photos, ${Math.max(1,Math.round(S.backupFile.size/1048576))} MB`;
+  }catch(e){console.warn(e);toast("Backup didn't work. Try again.")}
+  S.backingUp=false;renderSheet();
+}
+async function restoreAll(file,input){
+  if(input)input.value="";if(!file||!S.idb)return;
+  let data;try{data=JSON.parse(await file.text())}catch(e){toast("That file isn't a cleand backup");return}
+  if(!data||data.app!=="cleand"||!data.docs){toast("That file isn't a cleand backup");return}
+  const n=Object.keys(data.docs).filter(k=>k.startsWith("resets/")).length;
+  if(!confirm(`Restore ${n} reset${n===1?"":"s"} and ${Object.keys(data.blobs||{}).length} photos? Anything already here stays. Matching resets are replaced with the backup copy.`))return;
+  try{
+    const d=S.idb;
+    for(const [k,v] of Object.entries(data.blobs||{})){const b=await (await fetch(v)).blob();await idbReq(d,"blobs","readwrite",st=>st.put(b,k))}
+    for(const [k,v] of Object.entries(data.docs)){if(k.startsWith("session/"))continue;if(k.startsWith("resets/"))await S.db.doc(k).set(v);else await idbReq(d,"docs","readwrite",st=>st.put(v,k))}
+    Object.entries(data.ls||{}).forEach(([k,v])=>{if(BACKUP_LS.includes(k))try{localStorage.setItem(k,v)}catch(e){}});
+    $("#sheet").hidden=true;S.view="wins";render();toast("Restored. Welcome back.");
+  }catch(e){console.warn(e);toast("Restore stopped partway. Try again; nothing was deleted.")}
+}
 function setKey(k){try{k?localStorage.setItem("cleand_gemini_key",k):localStorage.removeItem("cleand_gemini_key")}catch(e){}}
 let sheetErr="",sheetBusy=false;
 function openSettings(){sheetErr="";renderSheet();$("#sheet").hidden=false}
-function closeSettings(){$("#sheet").hidden=true;S.wrap=null;render()}
+function closeSettings(){$("#sheet").hidden=true;S.wrap=null;S.backupFile=null;render()}
 function renderSheet(){
   const k=getKey();
   $("#sheet").innerHTML=`<div class="sheet" role="dialog" aria-modal="true" aria-label="Settings">
@@ -1254,6 +1339,12 @@ function renderSheet(){
   <p class="hint" style="margin-top:4px">cleand names each photo with one of these. One room per line.</p>
   <textarea id="roomsin" class="inp" rows="8" style="margin-top:8px;min-height:180px">${esc(getRooms().join("\n"))}</textarea>
   <button class="btn big" data-act="saverooms" style="margin-top:10px">Save rooms</button>
+  <h2 style="margin-top:22px;font-size:20px">Backup</h2>
+  <p class="hint" style="margin-top:4px">Your Wins and photos live only in this browser. Save a backup to Files or iCloud Drive now and then, and after big resets.${(()=>{let l="";try{l=localStorage.getItem("cleand_lastbackup")||""}catch(e){}return l?` Last backup: ${esc(fmtDay(l))}.`:" No backup yet."})()}</p>
+  ${S.backupFile?`<div class="note" style="margin-top:10px">Backup ready: ${esc(S.backupInfo||"")}. Tap below, then choose <b>Save to Files</b> and pick iCloud Drive.</div>
+  <button class="btn primary big" data-act="savebackup" style="margin-top:8px">↓ Save backup file</button>`
+  :`<button class="btn primary big" data-act="backup" style="margin-top:10px" ${S.backingUp?"disabled":""}>${S.backingUp?"Packing up…":"↓ Back up everything"}</button>`}
+  <label class="btn big" style="margin-top:8px;position:relative">↑ Restore from a backup<input id="restorein" type="file" accept=".json,application/json" style="position:absolute;inset:0;opacity:0;font-size:0"></label>
   <p class="hint" style="margin-top:14px">On Google's free tier, Google may use what you send to improve its products. Your photos and Wins are stored only on this phone.</p></div>`;
 }
 async function saveKey(){
@@ -1368,7 +1459,7 @@ function makeLocalStore(d){
 render();
 (async function boot(){
   S.sample={json:geminiJSON};S.canImages=true;S.imgMax=10;
-  try{const d=await openIDB();const st=makeLocalStore(d);S.db=st.db;S.assets=st.assets;
+  try{const d=await openIDB();const st=makeLocalStore(d);S.db=st.db;S.assets=st.assets;S.idb=d;
     if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
   }catch(e){console.warn("no local storage",e)}
   const db=S.db;
