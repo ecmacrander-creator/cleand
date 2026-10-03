@@ -628,21 +628,35 @@ async function saveCollage(planId){
     const imgs=await Promise.all(pairs.map(async p=>[await cardImg(p.b.id),await cardImg(p.a.id)]));
     const rows=pairs.map((p,i)=>({p,ib:imgs[i][0],ia:imgs[i][1]})).filter(r=>r.ib&&r.ia);
     if(!rows.length){toast("Couldn't load the photos");return}
-    const asp=Math.min(4/3,Math.max(3/4,rows[0].ib.naturalWidth/rows[0].ib.naturalHeight));
-    let s=1;const base=()=>{const M=56*s,G=20*s,W=1600*s,PW=(W-M*2-G)/2,PH=Math.round(PW/asp),LAB=64*s,HEAD=290*s,FOOT=110*s;return {M,G,W:Math.round(W),PW,PH,LAB,HEAD,FOOT,H:Math.round(HEAD+rows.length*(LAB+PH+G*2)+FOOT)}};
-    let L=base();while(L.W*L.H>15e6&&s>.4){s-=.1;L=base()}
-    const {M,G,W,PW,PH,LAB,HEAD,FOOT,H}=L;
+    // Always a square canvas: header and footer fixed, rooms laid out in the best-fitting grid of before/after pairs
+    const s=1.25,W=2000,H=2000,M=64,HEAD=Math.round(290*s*.9),FOOT=110,GX=48,GY=36,G=16;
+    const BW=W-M*2,BH=H-HEAD-FOOT,n=rows.length;
+    let best=null;
+    for(let cols=1;cols<=n;cols++){
+      const rws=Math.ceil(n/cols),cw=(BW-(cols-1)*GX)/cols,ch=(BH-(rws-1)*GY)/rws;
+      const lab=Math.max(40,Math.min(72,ch*.12)),phAvail=ch-lab;
+      let pw=(cw-G)/2,ph=Math.min(phAvail,pw*4/3);
+      if(ph<pw*3/4)pw=ph*4/3;
+      if(ph<=0||pw<=0)continue;
+      const area=pw*ph;if(!best||area>best.area)best={cols,rws,cw,ch,lab,pw,ph,area};
+    }
+    const {cols,rws,lab:LAB,pw:PW,ph:PH}=best,cs=Math.max(.55,Math.min(1.2,PW/620));
+    const pairW=PW*2+G,cellH=LAB+PH,gridH=rws*cellH+(rws-1)*GY;
     const c=document.createElement("canvas");c.width=W;c.height=H;const x=c.getContext("2d");
     x.fillStyle=CARD.bg;x.fillRect(0,0,W,H);cardBrand(x,W,M,s,w.createdAt);
     const mins=winMinutes(w),title=`${rows.length} room${rows.length===1?"":"s"}${mins?", "+fmtTime(mins):""}`;
     x.textBaseline="middle";x.fillStyle=CARD.ink;x.font=`700 ${60*s}px "Bricolage Grotesque",Figtree,sans-serif`;x.fillText(title+" reset",M,M+118*s);
     if(w.doneMsg){x.fillStyle=CARD.accent;x.font=`italic 500 ${30*s}px Figtree,sans-serif`;let t=w.doneMsg;while(x.measureText(t).width>W-M*2&&t.length>8)t=t.slice(0,-2);if(t!==w.doneMsg)t=t.trimEnd()+"…";x.fillText(t,M,M+172*s)}
-    let y=HEAD;
-    for(const r of rows){
-      x.fillStyle=CARD.ink;x.font=`700 ${36*s}px "Bricolage Grotesque",Figtree,sans-serif`;x.textBaseline="middle";x.fillText(r.p.b.name||"Area "+r.p.b.photo,M,y+LAB/2);
-      y+=LAB;cardPhoto(x,r.ib,M,y,PW,PH,"BEFORE","rgba(16,35,31,.82)",s);cardPhoto(x,r.ia,M+PW+G,y,PW,PH,"AFTER",CARD.accent,s);y+=PH+G*2;
-    }
-    x.fillStyle=CARD.ink3;x.font=`500 ${24*s}px "DM Mono",monospace`;x.textBaseline="middle";x.fillText("executive function, outsourced",M,H-FOOT/2);
+    const y0=HEAD+(BH-gridH)/2;
+    rows.forEach((r,i)=>{
+      const row=Math.floor(i/cols),inRow=Math.min(cols,n-row*cols),col=i%cols;
+      const rowW=inRow*pairW+(inRow-1)*GX,X=M+(BW-rowW)/2+col*(pairW+GX),Y=y0+row*(cellH+GY);
+      x.fillStyle=CARD.ink;x.font=`700 ${Math.round(LAB*.55)}px "Bricolage Grotesque",Figtree,sans-serif`;x.textBaseline="middle";
+      const nm=r.p.b.name||"Area "+r.p.b.photo;let t=nm;while(x.measureText(t).width>pairW&&t.length>4)t=t.slice(0,-2);if(t!==nm)t=t.trimEnd()+"…";
+      x.fillText(t,X,Y+LAB*.45);
+      cardPhoto(x,r.ib,X,Y+LAB,PW,PH,"BEFORE","rgba(16,35,31,.82)",cs);cardPhoto(x,r.ia,X+PW+G,Y+LAB,PW,PH,"AFTER",CARD.accent,cs);
+    });
+    x.fillStyle=CARD.ink3;x.font=`500 ${24*s}px "DM Mono",monospace`;x.textBaseline="middle";x.fillText("executive function, outsourced",M,H-FOOT/2-8);
     const blob=await new Promise(r=>c.toBlob(r,"image/png"));if(!blob){toast("Couldn't make the collage");return}
     await shareFiles([new File([blob],`cleand-${localDay(w.createdAt)}-collage.png`,{type:"image/png"})]);
   }finally{S.sharing=false}
