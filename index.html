@@ -230,7 +230,8 @@ textarea{resize:vertical;min-height:74px}
 .slidebtns button{width:38px;height:38px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;display:grid;place-items:center;padding:0}
 .bahead .rn select{appearance:none;-webkit-appearance:none;border:0;background:none;font:inherit;font-weight:700;font-size:15px;color:var(--ink);padding:0 16px 0 0;background-image:linear-gradient(45deg,transparent 50%,var(--ink-3) 50%),linear-gradient(135deg,var(--ink-3) 50%,transparent 50%);background-position:right 4px center,right 0 center;background-size:4px 4px;background-repeat:no-repeat}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
-.bahead .sbs{border:0;background:none;color:var(--accent);font-weight:700;font-size:12.5px;padding:0}
+.bahead .sbs{flex:none;display:inline-flex;align-items:center;gap:6px;border:0;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:13.5px;padding:7px 13px 7px 11px;border-radius:999px;min-height:34px}
+.bahead .sbs:active{transform:scale(.97)}
 .ba .swipe{text-align:center;font-size:12px;color:var(--accent);font-weight:700;margin-top:4px}
 .unm{margin-top:14px;border-top:1px dashed var(--line);padding-top:10px}
 .unm .k{font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;color:var(--ink-3);margin-bottom:8px}
@@ -271,7 +272,7 @@ textarea{resize:vertical;min-height:74px}
 .winsum .chev{flex:none;width:30px;height:30px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;font-weight:800;color:var(--ink-2)}
 .bas{display:flex;flex-direction:column;gap:14px;margin-top:12px}
 .ba{position:relative}
-.bahead{display:flex;justify-content:space-between;align-items:baseline;font-weight:700;font-size:14px;margin-bottom:6px}
+.bahead{display:flex;justify-content:space-between;align-items:center;gap:10px;font-weight:700;font-size:14px;margin-bottom:6px}
 .bahead .swipe{font-size:12px;color:var(--accent);font-weight:700}
 .baslides{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;border-radius:14px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .baslides::-webkit-scrollbar{display:none}
@@ -404,6 +405,7 @@ const uid=()=>(crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.rand
 function toast(msg){const t=$("#toast");t.textContent=msg;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,2600)}
 const fmtTime=m=>m>=60?(m%60?`${Math.floor(m/60)} hr ${m%60} min`:`${m/60} hour${m>=120?"s":""}`):`${m} min`;
 const icon={
+  share:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>',
   save:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg>',
   trash:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/></svg>',
   cam:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',
@@ -487,17 +489,48 @@ async function saveAll(planId){
   for(const [i,x] of unmatched.entries()){const f=await fileFor(x.id,`cleand-${d}-after-${i+1}.jpg`);if(f)files.push(f)}
   shareFiles(files);
 }
+/* Before/after share card: one branded PNG for texts and social.
+   Portrait photos sit side by side; landscape photos stack. Both are cropped to the same shape so they line up. */
 async function saveSideBySide(planId,photo){
   const w=winById(planId);if(!w)return;const {pairs}=pairsFor(w,w.after||[]),p=pairs.find(x=>x.b.photo===+photo);if(!p||!p.a)return;
-  const load=async id=>{const b=await S.assets.get(id);if(!b)return null;const u=URL.createObjectURL(b);return await new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=u})};
-  const [ib,ia]=await Promise.all([load(p.b.id),load(p.a.id)]);if(!ib||!ia){toast("Couldn't load both photos");return}
-  const H=1200,wb=Math.round(ib.naturalWidth*H/ib.naturalHeight),wa=Math.round(ia.naturalWidth*H/ia.naturalHeight),gap=16,top=90;
-  const c=document.createElement("canvas");c.width=wb+wa+gap*3;c.height=H+top+gap;const x=c.getContext("2d");
-  x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.drawImage(ib,gap,top,wb,H);x.drawImage(ia,gap*2+wb,top,wa,H);
-  x.font="bold 54px sans-serif";x.textBaseline="middle";x.fillStyle="#10231F";x.fillText("Before",gap+6,top/2);x.fillStyle="#087A7F";x.fillText("After",gap*2+wb+6,top/2);
-  const name=p.b.name||"Area "+p.b.photo;x.fillStyle="#687B7B";x.font="36px sans-serif";x.textAlign="right";x.fillText("cleand · "+name,c.width-gap,top/2);
-  const blob=await new Promise(r=>c.toBlob(r,"image/jpeg",.88));
-  shareFiles([new File([blob],`cleand-${localDay(w.createdAt)}-${slug(name)}-before-after.jpg`,{type:"image/jpeg"})]);
+  if(S.sharing)return;S.sharing=true;toast("Making your before & after…");
+  try{
+    const load=async id=>{const b=await S.assets.get(id);if(!b)return null;const u=URL.createObjectURL(b);return await new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=u})};
+    const [ib,ia]=await Promise.all([load(p.b.id),load(p.a.id)]);if(!ib||!ia){toast("Couldn't load both photos");return}
+    try{await Promise.all(['800 64px "Bricolage Grotesque"','700 56px "Bricolage Grotesque"','700 26px Figtree','500 28px "DM Mono"'].map(f=>document.fonts.load(f)))}catch(e){}
+    const C={bg:"#EDF4F3",ink:"#10231F",ink3:"#687B7B",accent:"#087A7F",line:"#CFDEDB"};
+    const asp=Math.min(4/3,Math.max(3/4,ib.naturalWidth/ib.naturalHeight)),side=asp<1;
+    const M=56,G=20,PW=side?720:1200,PH=Math.round(PW/asp),HEAD=226,FOOT=96;
+    const W=side?M*2+PW*2+G:M*2+PW,H=HEAD+(side?PH:PH*2+G)+FOOT;
+    const c=document.createElement("canvas");c.width=W;c.height=H;const x=c.getContext("2d");
+    const rr=(X,Y,w2,h2,r)=>{x.beginPath();x.moveTo(X+r,Y);x.arcTo(X+w2,Y,X+w2,Y+h2,r);x.arcTo(X+w2,Y+h2,X,Y+h2,r);x.arcTo(X,Y+h2,X,Y,r);x.arcTo(X,Y,X+w2,Y,r);x.closePath()};
+    x.fillStyle=C.bg;x.fillRect(0,0,W,H);
+    // Header: mark + wordmark, date, room name
+    x.fillStyle=C.accent;rr(M,M,52,52,15);x.fill();
+    x.fillStyle="rgba(255,255,255,.9)";rr(M+11,M+15,30,5,2.5);x.fill();
+    x.fillStyle="rgba(255,255,255,.55)";x.beginPath();x.arc(M+13,M+17.5,5,0,Math.PI*2);x.fill();
+    x.textBaseline="middle";x.fillStyle=C.ink;x.font='800 40px "Bricolage Grotesque",Figtree,sans-serif';x.fillText("cleand",M+68,M+26);
+    x.textAlign="right";x.fillStyle=C.ink3;x.font='500 28px "DM Mono",monospace';x.fillText(fmtDay(w.createdAt)||"",W-M,M+26);x.textAlign="left";
+    const name=p.b.name||"Area "+p.b.photo;
+    x.fillStyle=C.ink;x.font='700 56px "Bricolage Grotesque",Figtree,sans-serif';
+    let t=name;while(x.measureText(t).width>W-M*2&&t.length>4)t=t.slice(0,-2);if(t!==name)t=t.trimEnd()+"…";
+    x.fillText(t,M,M+108);
+    // Photos, cropped to fill the same frame
+    const draw=(img,X,Y,lab,col)=>{
+      const s=Math.max(PW/img.naturalWidth,PH/img.naturalHeight),sw=PW/s,sh=PH/s;
+      x.save();rr(X,Y,PW,PH,28);x.clip();x.drawImage(img,(img.naturalWidth-sw)/2,(img.naturalHeight-sh)/2,sw,sh,X,Y,PW,PH);x.restore();
+      x.strokeStyle=C.line;x.lineWidth=2;rr(X+1,Y+1,PW-2,PH-2,27);x.stroke();
+      x.font='700 26px Figtree,sans-serif';const tw=x.measureText(lab).width;
+      x.fillStyle=col;rr(X+20,Y+20,tw+40,52,26);x.fill();x.fillStyle="#fff";x.fillText(lab,X+40,Y+47);
+    };
+    const top=HEAD;
+    draw(ib,M,top,"BEFORE","rgba(16,35,31,.82)");
+    if(side)draw(ia,M+PW+G,top,"AFTER",C.accent);else draw(ia,M,top+PH+G,"AFTER",C.accent);
+    // Footer tagline
+    x.fillStyle=C.ink3;x.font='500 24px "DM Mono",monospace';x.fillText("executive function, outsourced",M,H-FOOT/2);
+    const blob=await new Promise(r=>c.toBlob(r,"image/png"));if(!blob){toast("Couldn't make the image");return}
+    await shareFiles([new File([blob],`cleand-${localDay(w.createdAt)}-${slug(name)}-before-after.png`,{type:"image/png"})]);
+  }finally{S.sharing=false}
 }
 async function addAfters(list,input,planId,photoNo){
   const files=[...(list||[])];if(input)input.value="";
@@ -947,7 +980,7 @@ function baHTML(w,b,a){
     <div class="slidebtns"><button data-act="savephoto" data-id="${w.id}" data-v="${x.id}" data-cap="${esc(name+" "+lab)}" aria-label="Save ${lab} photo">${icon.save}</button>${lab==="After"?`<button data-act="rmafter" data-id="${w.id}" data-v="${x.id}" aria-label="Remove after photo">${icon.trash}</button>`:""}</div></figure>`;
   const slides=[slide(b,"Before"),a?slide(a,"After"):(S.assets?`<figure class="noafter"><label><span>${icon.cam}</span><b>Add the after</b><small>for ${esc(name)}</small><input type="file" accept="image/*" data-after="${w.id}" data-photo="${b.photo}"></label></figure>`:"")].filter(Boolean);
   const rooms=getRooms(),opts=[...new Set([name,...rooms])];
-  return `<div class="ba"><div class="bahead"><label class="rn"><span class="sr">Room name</span><select data-rename="${b.photo}" data-id="${w.id}">${opts.map(r=>`<option ${r===name?"selected":""}>${esc(r)}</option>`).join("")}</select></label>${a?`<button class="sbs" data-act="sbs" data-id="${w.id}" data-v="${b.photo}">Save side-by-side</button>`:""}</div><div class="baslides">${slides.join("")}</div>${slides.length>1?`<div class="badots"><i class="on"></i><i></i></div><div class="swipe">${a?"Swipe for after →":"Swipe to add the after →"}</div>`:""}
+  return `<div class="ba"><div class="bahead"><label class="rn"><span class="sr">Room name</span><select data-rename="${b.photo}" data-id="${w.id}">${opts.map(r=>`<option ${r===name?"selected":""}>${esc(r)}</option>`).join("")}</select></label>${a?`<button class="sbs" data-act="sbs" data-id="${w.id}" data-v="${b.photo}" aria-label="Share before and after image of ${esc(name)}">${icon.share}<span>Share</span></button>`:""}</div><div class="baslides">${slides.join("")}</div>${slides.length>1?`<div class="badots"><i class="on"></i><i></i></div><div class="swipe">${a?"Swipe for after →":"Swipe to add the after →"}</div>`:""}
     ${a?`<div class="afterbar"><img src="${blobUrl(a.id)}" alt=""><span>After photo</span>
       <label class="mv"><span class="sr">Move after photo to another room</span><select data-move="${a.id}" data-id="${w.id}"><option value="">Wrong room? Move…</option>${(w.before||[]).filter(x=>x.photo!==b.photo).map(x=>`<option value="${x.photo}">${esc(x.name||"Area "+x.photo)}</option>`).join("")}<option value="0">Not matched</option></select></label>
       <button class="rm" data-act="rmafter" data-id="${w.id}" data-v="${a.id}">${icon.trash}<span>Delete</span></button></div>`:""}</div>`;
