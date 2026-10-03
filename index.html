@@ -159,6 +159,7 @@ textarea{resize:vertical;min-height:74px}
 .jobacts .btn.big{min-height:52px}
 .jobacts .btn.primary:disabled{opacity:1;background:var(--surface-2);border-color:var(--surface-2);color:var(--ink-3)}
 .donebanner{margin-top:14px;background:var(--good-soft);color:var(--good);border-radius:var(--r);padding:14px 16px;font-size:15px}
+.donebanner.part{background:var(--warm);color:var(--warm-ink)}
 .donebanner b{display:block;font-family:var(--display);font-size:19px;margin-bottom:2px}
 .bonus{font-size:11px;letter-spacing:.04em;background:#F2C14E;color:#3D2E05;border-radius:999px;padding:1px 8px}
 .pill{display:inline-block;margin-top:8px;font-size:12px;font-weight:700;border-radius:999px;padding:2px 10px}
@@ -329,6 +330,13 @@ textarea{resize:vertical;min-height:74px}
 .backdrop{position:fixed;inset:0;z-index:60;background:rgba(5,12,11,.5);display:flex;align-items:flex-end;justify-content:center}
 .sheet{background:var(--surface);width:100%;max-width:560px;border-radius:22px 22px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom,0px));max-height:92vh;overflow:auto}
 .sheet h2{font-size:22px;font-weight:800}
+.wrap .wq{margin-top:16px}
+.wrap .wq>b{display:block;font-size:15.5px;margin-bottom:8px}
+.wmins{display:flex;align-items:center;gap:10px;margin-bottom:10px;color:var(--ink-2);font-weight:600}
+.wmins input{font-family:var(--display);font-size:34px;font-weight:800;width:3.4ch;text-align:center;border:1px solid var(--line);border-radius:12px;padding:4px 6px;background:var(--surface);color:var(--ink)}
+.wrap .btn.primary:disabled{opacity:.5}
+.wmins input::-webkit-inner-spin-button,.wmins input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.wmins input{-moz-appearance:textfield}
 .sheet ol{margin:10px 0 0;padding-left:20px;color:var(--ink-2);font-size:15px;display:flex;flex-direction:column;gap:6px}
 .sheet a{color:var(--accent);font-weight:700}
 .iconbtn{width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;color:var(--ink-2);flex:none}
@@ -822,9 +830,34 @@ const GOAL_MSGS={
   "Biggest impact":["Maximum difference, minimum drama.","Walk in the front door and just take that in."]
 };
 function doneMessage(p){const pool=[...(GOAL_MSGS[p.goal]||[]),...(GOAL_MSGS[p.goal]||[]),...DONE_MSGS];return pool[Math.floor(Math.random()*pool.length)]}
+/* Clean complete: ask finished vs. partly done, and ask how long it took when the clock wasn't used. */
+function usedClock(p){return workMs(p)>=60000}
+function openWrap(){
+  const p=S.plan;if(!p)return;
+  const all=p.tasks.length&&p.tasks.every(t=>t.done),est=p.tasks.filter(t=>t.done).reduce((a,t)=>a+t.minutes,0);
+  S.wrap={fin:all?"yes":null,mins:usedClock(p)?null:(est||p.minutes||"")};renderWrap();$("#sheet").hidden=false;
+}
+function renderWrap(){
+  const p=S.plan,w=S.wrap;if(!p||!w)return;const clock=usedClock(p),cm=Math.round(workMs(p)/60000);
+  const chip=(v,l)=>`<button class="chip" data-act="wrapfin" data-v="${v}" aria-pressed="${w.fin===v}">${l}</button>`;
+  const ok=w.fin&&(clock||+w.mins>0);
+  $("#sheet").innerHTML=`<div class="sheet wrap" role="dialog" aria-label="Clean complete">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><h2>Clean complete</h2><button class="iconbtn" data-act="closesheet" aria-label="Close">✕</button></div>
+  <div class="wq"><b>Did you finish?</b><div class="chips">${chip("yes","Yes, all done")}${chip("part","Partly done")}</div></div>
+  ${clock?`<p class="hint wq">The clock says ${fmtTime(Math.max(1,cm))}.</p>`
+   :`<div class="wq"><b>How long did it take?</b><div class="wmins"><input id="wrapmins" type="number" inputmode="numeric" min="1" max="600" value="${esc(String(w.mins))}" aria-label="Minutes it took"><span>minutes</span></div>
+     <div class="chips">${[10,15,20,30,45,60].map(m=>`<button class="chip sm" data-act="wrapmin" data-v="${m}" aria-pressed="${+w.mins===m}">${m===60?"1 hr":m}</button>`).join("")}</div></div>`}
+  <button class="btn primary big" data-act="wrapsave" ${ok?"":"disabled"} style="margin-top:18px">${w.fin==="part"?"Save my progress":"Save to Wins"}</button>
+  </div>`;
+}
 function completeJob(){
-  const p=S.plan;if(!p||!p.tasks.every(t=>t.done))return;
-  pauseClock(p);p.status="done";p.completedAt=new Date().toISOString();p.doneMsg=doneMessage(p);
+  const p=S.plan,w=S.wrap;if(!p||!w||!w.fin)return;
+  const clock=usedClock(p);if(!clock&&!(+w.mins>0))return;
+  pauseClock(p);p.actualMinutes=clock?Math.max(1,Math.round(workMs(p)/60000)):Math.round(+w.mins);
+  p.completedAt=new Date().toISOString();S.wrap=null;$("#sheet").hidden=true;
+  if(w.fin==="part"){p.status="partial";savePlan();render();toast("Saved. Progress counts.");
+    setTimeout(()=>{const a=$("#aftersec");a&&a.scrollIntoView({behavior:"smooth",block:"center"})},600);return}
+  p.tasks.forEach(t=>t.done=true);p.status="done";p.doneMsg=doneMessage(p);
   savePlan();render();confetti();toast(p.doneMsg);
   setTimeout(()=>{const a=$("#aftersec");a&&a.scrollIntoView({behavior:"smooth",block:"center"})},1400);
 }
@@ -834,7 +867,7 @@ async function saveForLater(){
 }
 async function resumeJob(id){
   const w=S.wins.find(x=>x.id===id);if(!w)return;
-  if(S.plan&&S.plan.id!==id){pauseClock(S.plan);if(S.plan.status!=="done")S.plan.status="saved";await saveNow(S.plan)}
+  if(S.plan&&S.plan.id!==id){pauseClock(S.plan);if(S.plan.status!=="done"&&S.plan.status!=="partial")S.plan.status="saved";await saveNow(S.plan)}
   S.areas.forEach(a=>URL.revokeObjectURL(a.url));S.areas=[];
   S.plan=JSON.parse(JSON.stringify(w));S.plan.status="active";S.view="plan";savePlan();render();window.scrollTo({top:0});
 }
@@ -897,7 +930,7 @@ async function finishToHome(){
   S.plan=null;clearClean();toast(msg?"Saved to Wins. "+msg:"Saved to Wins. Nice work.");
 }
 async function newReset(){
-  if(S.plan){pauseClock(S.plan);if(S.plan.status!=="done")S.plan.status="saved";await saveNow(S.plan)}
+  if(S.plan){pauseClock(S.plan);if(S.plan.status!=="done"&&S.plan.status!=="partial")S.plan.status="saved";await saveNow(S.plan)}
   S.plan=null;clearClean();toast("Fresh start. Your last reset is saved in Wins.");
 }
 function clearClean(){
@@ -1020,7 +1053,7 @@ function unmatchedHTML(w,pf){
   return `<div class="unm"><div class="k">Not matched yet · tap the area it shows</div>${pf.unmatched.map(x=>`<div class="unrow"><button class="open" data-act="lb" data-src="${blobUrl(x.id)}" data-cap="After"><img src="${blobUrl(x.id)}" alt=""></button>
     <div class="unchips">${pf.pairs.map(({b})=>`<button class="chip sm" data-act="assign" data-id="${w.id}" data-v="${x.id}" data-photo="${b.photo}">${esc(b.name||"Area "+b.photo)}</button>`).join("")}<button class="chip sm" data-act="rmafter" data-id="${w.id}" data-v="${x.id}">Remove</button></div></div>`).join("")}</div>`;
 }
-function winMinutes(w){const ms=(w.elapsedMs||0)+(w.startedAt?Date.now()-new Date(w.startedAt).getTime():0);if(ms>60000)return Math.min(Math.round(ms/60000),w.minutes||999);return (w.tasks||[]).filter(t=>t.done).reduce((s,t)=>s+(t.minutes||0),0)}
+function winMinutes(w){if(w.actualMinutes)return w.actualMinutes;const ms=(w.elapsedMs||0)+(w.startedAt?Date.now()-new Date(w.startedAt).getTime():0);if(ms>60000)return Math.min(Math.round(ms/60000),w.minutes||999);return (w.tasks||[]).filter(t=>t.done).reduce((s,t)=>s+(t.minutes||0),0)}
 function statsHTML(){
   const W=S.wins,done=W.filter(w=>w.status==="done"||((w.tasks||[]).length&&(w.tasks||[]).every(t=>t.done)));
   if(!W.length)return "";
@@ -1071,7 +1104,7 @@ function winsHTML(){
     const open=S.openWins.has(w.id),rooms=[...new Set((w.before||[]).map(b=>b.name).filter(Boolean))],thumb=(w.after&&w.after[0])||(w.before&&w.before[0]);
     const summary=`<button class="winsum" data-act="wintoggle" data-id="${w.id}" aria-expanded="${open}">
       ${thumb?`<img src="${blobUrl(thumb.id)}" alt="">`:`<span class="noimg"></span>`}
-      <span class="wtxt"><span class="wdate">${fmtDay(w.createdAt)}${isDone?' <span class="okdot">✓</span>':` · <em>${isCur?"in progress":"saved for later"}</em>`}</span>
+      <span class="wtxt"><span class="wdate">${fmtDay(w.createdAt)}${isDone?' <span class="okdot">✓</span>':` · <em>${st==="partial"?"partly done":isCur?"in progress":"saved for later"}</em>`}</span>
       <b>${esc(w.goal||w.title||"Reset")}</b><span class="wsub">${esc([fmtTime(winMinutes(w)),rooms.slice(0,3).join(", ")+(rooms.length>3?` +${rooms.length-3}`:"")].filter(Boolean).join(" · "))}</span></span>
       <span class="chev">${open?"−":"+"}</span></button>`;
     if(!open)return `<article class="win closed">${summary}</article>`;
@@ -1107,8 +1140,9 @@ function renderPlanParts(){
       ${S.fillErr?`<div class="note err">${esc(S.fillErr)}</div>`:""}</div>`:"";
   }
   const ja=$("#jobacts");
-  if(ja)ja.innerHTML=p.status==="done"?`<div class="donebanner"><b>${esc(p.doneMsg||"Job complete 🎉")}</b>Now snap the after photos below so you can admire it later.</div>`
-    :`<div class="jobacts"><button class="btn primary big" data-act="complete" ${all?"":"disabled"}>${all?"Complete job":`Complete job · ${total-done} step${total-done===1?"":"s"} left`}</button>
+  if(ja)ja.innerHTML=p.status==="done"?`<div class="donebanner"><b>${esc(p.doneMsg||"Job complete 🎉")}</b>${p.actualMinutes?`${fmtTime(p.actualMinutes)} well spent. `:""}Now snap the after photos below so you can admire it later.</div>`
+    :p.status==="partial"?`<div class="donebanner part"><b>Progress counts.</b>${p.actualMinutes?`${fmtTime(p.actualMinutes)} logged. `:""}Snap the after photos below. You can pick the rest back up from Wins anytime.</div>`
+    :`<div class="jobacts"><button class="btn primary big" data-act="complete">✓ Clean complete${all?"":` · ${done}/${total} steps`}</button>
       <button class="btn big" data-act="later">Save for later</button></div>`;
   const ck=$("#clock");if(ck)ck.innerHTML=clockHTML();
   const af=$("#aftersec");if(af)af.classList.toggle("lit",p.status==="done"||(r!==null&&r<=0));
@@ -1130,7 +1164,10 @@ document.addEventListener("click",e=>{
   else if(a==="forgetkey"){setKey("");closeSettings();toast("Key removed from this phone")}
   else if(a==="stop"){S.ctl&&S.ctl.abort()}
   else if(a==="clock")startClock();
-  else if(a==="complete")completeJob();
+  else if(a==="complete")openWrap();
+  else if(a==="wrapfin"){S.wrap.fin=v;renderWrap()}
+  else if(a==="wrapmin"){S.wrap.mins=+v;renderWrap()}
+  else if(a==="wrapsave")completeJob();
   else if(a==="later")saveForLater();
   else if(a==="fill")fillTime(+v);
   else if(a==="resume")resumeJob(b.dataset.id);
@@ -1160,7 +1197,8 @@ document.addEventListener("click",e=>{
 });
 document.addEventListener("input",e=>{
   const t=e.target;
-  if(t.id==="timebig"){const n=Math.round(+t.value);if(n>=1){S.time=Math.min(240,n);const r=$("#trange");if(r)r.value=Math.min(120,S.time);document.querySelectorAll('[data-act="time"]').forEach(x=>x.setAttribute("aria-pressed",String(+x.dataset.v===S.time)))}}
+  if(t.id==="wrapmins"){if(S.wrap){S.wrap.mins=t.value;const sv=document.querySelector('[data-act="wrapsave"]');if(sv)sv.disabled=!(S.wrap.fin&&+t.value>0);document.querySelectorAll('[data-act="wrapmin"]').forEach(x=>x.setAttribute("aria-pressed",String(+x.dataset.v===+t.value)))}}
+  else if(t.id==="timebig"){const n=Math.round(+t.value);if(n>=1){S.time=Math.min(240,n);const r=$("#trange");if(r)r.value=Math.min(120,S.time);document.querySelectorAll('[data-act="time"]').forEach(x=>x.setAttribute("aria-pressed",String(+x.dataset.v===S.time)))}}
   else if(t.id==="trange"){S.time=+t.value;{const tb=$("#timebig");if(tb)tb.value=S.time}document.querySelectorAll('[data-act="time"]').forEach(x=>x.setAttribute("aria-pressed",String(+x.dataset.v===S.time)))}
   else if(t.id==="cgoal")S.customGoal=t.value;
   else if(t.id==="ctx")S.context=t.value;
@@ -1199,7 +1237,7 @@ async function renameArea(planId,photo,name){
 function setKey(k){try{k?localStorage.setItem("cleand_gemini_key",k):localStorage.removeItem("cleand_gemini_key")}catch(e){}}
 let sheetErr="",sheetBusy=false;
 function openSettings(){sheetErr="";renderSheet();$("#sheet").hidden=false}
-function closeSettings(){$("#sheet").hidden=true;render()}
+function closeSettings(){$("#sheet").hidden=true;S.wrap=null;render()}
 function renderSheet(){
   const k=getKey();
   $("#sheet").innerHTML=`<div class="sheet" role="dialog" aria-modal="true" aria-label="Settings">
